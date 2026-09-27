@@ -35,6 +35,9 @@ let GDS = {
       THREE.LinearSRGBColorSpace,
     );
     materialParams.opacity = color[3];
+    materialParams.transparent = color[3] < 1;
+    // Translucent guide volumes must not hide conductors drawn behind them.
+    materialParams.depthWrite = color[3] >= 1;
 
     const material = new THREE.MeshPhysicalMaterial();
     material.setValues(materialParams);
@@ -51,6 +54,7 @@ let GDS = {
       name: name,
       threejs_material: material,
       visual_order: visual_order,
+      default_opacity: color[3],
     };
     this.layers[layer_id] = layer;
   },

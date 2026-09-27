@@ -12,7 +12,11 @@ The viewer shows only layer types present in the loaded GDS that are in the TR-1
 
 ## 3D appearance
 
-TR-1um uses a muted 3D palette inspired by the upstream viewer: neutral wells and active regions, rose gates, gold M1, blue-gray M2, cyan M3, and dark contacts. Colors intentionally differ from the KLayout 2D palette. Heights are exaggerated sixfold for readable sidewalls and contact pillars, not physical measurements. The initial view is oblique; **View angle** switches between **3D** and **Top**. **Cast shadows** can be disabled on slower devices. Layer filtering is unchanged.
+TR-1um keeps the hue families of the PDK's KLayout palette with softer colors for lit 3D surfaces: green WN/AN, pink-purple AP, apricot GC, lavender GR, light-blue M1, silver-gray M2, and soft-blue M3. Contacts and vias are white/silver or gray. Labels have neutral text with dark outlines.
+
+WN (22% opacity), PO (24%), and PIN (48%) are translucent guides so large regions and opening/pin markers do not obscure the structure. They do not cast solid shadows. Conductors and contacts remain opaque, preserving face shading and readable connections. **Layers → Guide opacity** adjusts the guide layers present in the loaded GDS; hiding a layer also hides its labels.
+
+The illustrative stack retains the previous sixfold slab thicknesses and extends contact/via spans by about 1.5×. Vias still meet both adjacent metals. Heights and spacing are visualization aids, not physical measurements. **View angle** switches between **3D** and **Top**; **Cast shadows** can be disabled on slower devices. Layer filtering is unchanged.
 
 ## TR-1um layer set
 

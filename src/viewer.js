@@ -555,7 +555,9 @@ function init3D() {
   keyLight.position.set(0, 0, 50);
   keyLight.castShadow = PDK === 'TR-1um';
   keyLight.shadow.mapSize.set(2048, 2048);
-  keyLight.shadow.bias = -0.0001;
+  // Cover the depth slope across a shadow texel to avoid self-shadow stripes
+  // on wide, coplanar interconnects in large layouts.
+  keyLight.shadow.bias = -0.0005;
   keyLight.shadow.normalBias = 0.06;
   scene.add(keyLight, keyLight.target);
   if (PDK === 'TR-1um') scene.add(new THREE.AmbientLight(0xffffff, 0.45));
@@ -611,6 +613,7 @@ function initGUI() {
       .name('Cast shadows')
       .onChange((enabled) => {
         renderer.shadowMap.enabled = enabled;
+        for (const layer of Object.values(GDS.layers)) layer.threejs_material.needsUpdate = true;
       });
   }
   viewSettings['isoleate_selection_or_back'] = function () {
@@ -757,6 +760,25 @@ function updateGuiAfterLoad() {
       'border-left: 5px solid #' +
       layer.threejs_material.color.getHexString(THREE.LinearSRGBColorSpace) +
       ';';
+  }
+
+  // Expose only translucent guide layers actually present in this design.
+  // Keep conductors opaque by default to preserve clear interconnect tracing.
+  const guides = visibleLayers.filter(([, layer]) => layer.default_opacity < 1);
+  if (guides.length) {
+    const opacityFolder = guiLayersFolder.addFolder('Guide opacity');
+    opacityFolder.close();
+    for (const [, layer] of guides) {
+      const material = layer.threejs_material;
+      opacityFolder
+        .add(material, 'opacity', 0.05, 1, 0.01)
+        .name(layer.name)
+        .onChange((opacity) => {
+          material.transparent = opacity < 1;
+          material.depthWrite = opacity >= 1;
+          material.needsUpdate = true;
+        });
+    }
   }
 
   // buildInstancesNamesFolder(viewSettings.instances['_ SORT_BY _']);
@@ -1568,8 +1590,10 @@ function buildMeshesScene(top_node, main_matrix) {
 
     instanced_mesh.name = reference_mesh.name;
     const layer = GDS.layers[GDS.makeLayerId(mesh.layer_number, mesh.layer_datatype)];
-    instanced_mesh.castShadow = !['WN', 'PIN', 'TXM1', 'TXM2'].includes(layer.name);
-    instanced_mesh.receiveShadow = true;
+    instanced_mesh.castShadow = !['WN', 'PO', 'PIN', 'TXM1', 'TXM2'].includes(layer.name);
+    // A translucent guide volume has two surfaces; shadowing both creates
+    // doubled dark silhouettes that obscure the structures being explained.
+    instanced_mesh.receiveShadow = layer.default_opacity >= 1;
 
     let color = new THREE.Color(1, 1, 1);
     for (let j = 0; j < mesh.instances.length; j++) {
@@ -1640,6 +1664,8 @@ function buildLabelsScene() {
       sprite.scale.set(Math.max(2, label.text.length * 1.1), 2, 1);
       sprite.layers.set(getTHREEJSLayerFromGDSLayerId(layerId));
       sprite.raycast = () => {};
+      // Draw labels after translucent guide volumes, preserving legibility.
+      sprite.renderOrder = 100;
       scene_root_group.add(sprite);
     }
   }
