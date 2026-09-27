@@ -10,7 +10,7 @@
 ## 記載が食い違う／名前が公開されていない箇所
 
 - **SiCA 08**：READMEとdocs/info.mdはHaruto_Tanakaと書き、存在しない1bitCPUファイルへリンクしています。実際の提出GDSのトップセル参照は`1bitCPU_Kanta_Fukuda`です。ビューアではKanta_Fukudaを掲載し、MPWリポジトリへリンクします。SiCA 07のHaruto_Tanakaとは分けています。
-- **OpenSUSI 05**：READMEには3zkiの計装アンプとPenguinEinoのVGAだけが載っています。提出GDSには`AUDIO_OPAMP01 → opamp_r2r_saito`も存在します。AUDIO OPAMP 09のREADMEが同名の回路をDaisukeSaitoに対応付けているため、その名前を補いました。セル名による帰属の推定であり、両チップの全図形が同一という意味ではありません。
+- **OpenSUSI 05**：搭載回路はREADMEに記載された3zkiの計装アンプとPenguinEinoのVGAのみ。GDSに残る `opamp_r2r_saito` と配下59セルには図形がなく、搭載回路として数えない。以前のセル名だけに基づくDaisukeSaitoの追加は誤りだったため削除（2026-09-27）。
 - **KOSEN 04 / Qdai 04**：README前半の1bit-CPUハンズオンは開催背景です。実際のGDSにはCPUセルがなく、KOSEN 04はRFミキサー一式、Qdai 04はTiny555と4bit SRAMです。以前の「1bit-CPU」を削除しました。
 - **サンケン電気枠**：READMEはテンプレートのままです。一覧の5名に加え、GDSとSPICEの名前付きセル`fujii_inverter`、`kamiyama_inverter`、`kamiyama_Driver`、`kawamoto_inverter`、`shishido_opamp_v12`を掲載しました。fujii等はセル名の表記であり、フルネームを推定していません。`mmOPAMP`・`mmBIAS`、回路選択用アナログスイッチ・デコーダも載せていますが、作者名は資料にないため割り当てていません。info.yamlにはTakanaga Yamazakiとありますが、回路との対応が明記されていないため画面には掲載しません。一覧のexdojpは、提出ファイルの`inverter_exodjp`およびディレクトリ名に合わせてexodjpに直しました。
 - **ZEP**：一覧にないkato・sasaki・kudoを、各inverterディレクトリと提出GDS（`inverter_kato1`・`inverter_ssk`・`inverter_kudo`）から追加。巨大インバータとリングVCOは回路として追加しましたが、作者名が明記されていないため個人名は割り当てていません。
@@ -428,7 +428,6 @@
 
 ### OpenSUSI 05
 
-- オーディオ用OPAMP回路：DaisukeSaito
 - 計装アンプ：3zki
 - RGB121 VGA出力回路：PenguinEino
 
@@ -436,8 +435,7 @@
 
 - [資料 1](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1/blob/main/README.md)
 - [資料 2](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/blob/main/README.md)
-- [資料 3](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_AUDIO_OPAMP09/blob/main/README.md)
-- [資料 4](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/blob/main/src/tr_1um_OpenSUSI05.gds)
+- [資料 3](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/blob/main/src/tr_1um_OpenSUSI05.gds)
 - [提出GDS](https://raw.githubusercontent.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/main/src/tr_1um_OpenSUSI05.gds) — SHA-256: `042b31fe3a9358d11799a2a44a441c47559a53669a4c4f66bedd832c06d4fec2`
 
 

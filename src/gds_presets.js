@@ -1253,12 +1253,6 @@ export const GDS_PRESETS = [
       'https://raw.githubusercontent.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/main/images/all_frame.png',
     members: [
       {
-        name: 'DaisukeSaito',
-        design: 'オーディオ用OPAMP回路',
-        url: 'https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_AUDIO_OPAMP09/tree/main/opamp_r2r_audio/DaisukeSaito',
-        cells: ['opamp_r2r_saito'],
-      },
-      {
         name: '3zki',
         design: '計装アンプ',
         url: 'https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1/tree/main/member_project/InstrumentationAmplifier/3zki',
@@ -1271,11 +1265,10 @@ export const GDS_PRESETS = [
         cells: ['ishi_vga_core'],
       },
     ],
-    description: 'オーディオ用OPAMP回路 / 計装アンプ / RGB121 VGA出力回路',
+    description: '計装アンプ / RGB121 VGA出力回路',
     creditSources: [
       'https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1/blob/main/README.md',
       'https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/blob/main/README.md',
-      'https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_AUDIO_OPAMP09/blob/main/README.md',
       'https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/blob/main/src/tr_1um_OpenSUSI05.gds',
     ],
   },
