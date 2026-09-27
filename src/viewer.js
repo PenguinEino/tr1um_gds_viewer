@@ -6,7 +6,12 @@ import { WORKER_MSG_TYPE } from './defines.js';
 import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
-import { getLayerPattern, applyLayerPattern, setLayerPatternEnabled } from './layer_patterns.js';
+import {
+  getLayerPattern,
+  applyLayerPattern,
+  setLayerPatternEnabled,
+  setLayerPatternPixelRatio,
+} from './layer_patterns.js';
 
 function normalizeGdsUrl(value) {
   const url = new URL(value);
@@ -460,6 +465,7 @@ function initProcessLayers() {
         layer.pattern,
         viewSettings.layer_patterns,
         layer_data.zmax,
+        window.devicePixelRatio,
       );
     }
   }
@@ -801,7 +807,7 @@ function updateGuiAfterLoad() {
     for (const [, layer] of guides) {
       const material = layer.threejs_material;
       opacityFolder
-        .add(material, 'opacity', 0.05, 1, 0.01)
+        .add(material, 'opacity', 0, 1, 0.01)
         .name(layer.name)
         .onChange((opacity) => {
           material.transparent = opacity < 1;
@@ -1360,6 +1366,10 @@ window.onresize = function () {
   camera.aspect = getRenderWidth() / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(getRenderWidth(), window.innerHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  for (const layer of Object.values(GDS.layers)) {
+    setLayerPatternPixelRatio(layer.threejs_material, window.devicePixelRatio);
+  }
 };
 
 function initWindowEvents() {

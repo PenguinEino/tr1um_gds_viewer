@@ -14,9 +14,9 @@ The viewer shows only layer types present in the loaded GDS that are in the TR-1
 
 TR-1um keeps the hue families of the PDK's KLayout palette with softer colors for lit 3D surfaces: green WN/AN, pink-purple AP, apricot GC, lavender GR, light-blue M1, silver-gray M2, and soft-blue M3. Contacts and vias are white/silver or gray. Labels have neutral text with dark outlines.
 
-WN (22% opacity), PO (24%), and PIN (48%) are translucent guides so large regions and opening/pin markers do not obscure the structure. They do not cast solid shadows. Conductors and contacts remain opaque, preserving face shading and readable connections. **Layers → Guide opacity** adjusts the guide layers present in the loaded GDS; hiding a layer also hides its labels.
+WN (22% opacity), PO (24%), and PIN (3%) are translucent guides so large regions and opening/pin markers do not obscure the structure. They do not cast solid shadows. Conductors and contacts remain opaque, preserving face shading and readable connections. **Layers → Guide opacity** adjusts the guide layers present in the loaded GDS; hiding a layer also hides its labels.
 
-Coarse surface patterns follow the KLayout stipple families: sparse dots for WN/AP/AN, opposing diagonal hatches for M1/M2, and simplified bars, grids, or crosses for other layers. The layer list includes matching swatches. Patterns stay on horizontal faces, preserve lighting and transparency, and fade out when too small to resolve to avoid moiré. **Layer patterns** switches them on/off.
+Surface stipples use the actual custom bitmaps from TR-1um's KLayout `.lyp` and KLayout's standard pattern definitions. Their one-pixel lines/dots and repeat periods are rendered in CSS screen pixels, as in KLayout, instead of growing with the layout when zoomed in. The layer list uses the same bitmap swatches. Sidewalls retain their shading and pin labels remain fully legible over the nearly transparent PIN geometry. **Layer patterns** switches the stipples on/off.
 
 The illustrative stack retains the previous sixfold slab thicknesses and extends contact/via spans by about 1.5×. Vias still meet both adjacent metals. Heights and spacing are visualization aids, not physical measurements. **View angle** switches between **3D** and **Top**; **Cast shadows** can be disabled on slower devices. Layer filtering is unchanged.
 

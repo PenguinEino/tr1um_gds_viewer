@@ -91,7 +91,7 @@ export const PDK_LAYERS = {
       name: 'PIN',
       zmin: 7.86,
       zmax: 7.92,
-      color: [0.68, 0.36, 0.37, 0.48],
+      color: [0.68, 0.36, 0.37, 0.03],
     },
     {
       layer_number: 19,
