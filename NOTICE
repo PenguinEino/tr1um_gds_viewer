@@ -1,0 +1,26 @@
+TR-1um GDS Viewer
+https://github.com/PenguinEino/tr1um_gds_viewer
+
+This project is a modified fork of Tiny Tapeout GDS Viewer:
+https://github.com/TinyTapeout/tinytapeout_gds_viewer
+Original viewer by its respective contributors; original Apache License 2.0
+is retained in LICENSE. This fork is maintained by PenguinEino.
+Copyright 2026 PenguinEino (fork contributions).
+
+Changes in this fork include TR-1um layer selection, labels and pins,
+GDS loading and parser fixes, rendering, layer spacing, 2D/3D modes,
+MPW presets, translations and community links. Modified source files
+are marked; src/gds_processor.js and src/gds_processor.wasm are rebuilt
+from the modified gds_processor/src/gds_processor.cpp and build files.
+package.json and package-lock.json contain fork-specific package metadata.
+
+TR-1um layer metadata and custom pattern data are derived from OpenSUSI/TR-1um:
+Copyright 2025 OpenSUSI (https://www.opensusi.org/)
+Copyright 2025 ISHI-KAI (https://ishi-kai.org/)
+Copyright 2025 TOKAI RIKA CO., LTD
+Apache License 2.0; see public/licenses/OpenSUSI.txt.
+
+Third-party components have their own licenses and copyright holders.
+See THIRD_PARTY_NOTICES.md and public/licenses/ (licenses/ on the website).
+These notices do not change the terms of any license. Brand logos and
+linked GDS designs are not relicensed under the viewer's software license.

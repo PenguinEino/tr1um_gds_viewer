@@ -1,5 +1,8 @@
 // UI translations only; GDS cell names, layer codes and project names stay intact.
 const messages = {
+  'Community links': ['関連リンク', 'Community links', '相关链接'],
+  'Source repository': ['GitHub · ソースコード', 'GitHub · Source code', 'GitHub · 源代码'],
+  Licenses: ['ライセンス', 'Licenses', '许可证'],
   Language: ['言語', 'Language', '语言'],
   'Open GDS': ['GDSを開く', 'Open GDS', '打开 GDS'],
   'GDS input': ['GDS読み込み', 'GDS input', '加载 GDS'],

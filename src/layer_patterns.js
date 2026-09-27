@@ -1,8 +1,8 @@
 import * as THREE from 'three';
-import { KLAYOUT_PATTERNS } from './klayout_patterns.js';
+import { LAYER_STIPPLES } from './layer_stipples.js';
 
 export function getLayerPattern(name) {
-  const pattern = KLAYOUT_PATTERNS[name];
+  const pattern = LAYER_STIPPLES[name];
   if (!pattern) return;
   const width = pattern.rows[0].length;
   const height = pattern.rows.length;

@@ -1,3 +1,4 @@
+/*! Modified by PenguinEino for TR-1um GDS Viewer (2026). Rebuilt from modified Tiny Tapeout GDS Viewer processor sources. Viewer source: Apache-2.0; linked components retain their own licenses. See LICENSE, NOTICE, THIRD_PARTY_NOTICES.md and licenses/. */
 var Module = (() => {
   var _scriptName = import.meta.url;
 

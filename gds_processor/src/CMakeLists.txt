@@ -1,3 +1,4 @@
+# Modified by PenguinEino for TR-1um GDS Viewer (2026); based on Tiny Tapeout GDS Viewer. See NOTICE and LICENSE.
 cmake_minimum_required(VERSION 3.24)
 project(GDS_wasm)
 
@@ -27,4 +28,12 @@ set_target_properties(gds_processor PROPERTIES
     -s FORCE_FILESYSTEM=1 \
     -s EXPORTED_FUNCTIONS='[\"_addProcessLayer\", \"_processGDS\", \"_processCells\", \"_malloc\", \"_free\"]' \
     -s EXPORTED_RUNTIME_METHODS='[\"ccall\",\"FS\"]' "
+)
+
+find_package(Python3 REQUIRED COMPONENTS Interpreter)
+add_custom_command(TARGET gds_processor POST_BUILD
+    COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/../scripts/stamp_processor.py"
+        "${CMAKE_SOURCE_DIR}/../src/gds_processor.js"
+        "${CMAKE_SOURCE_DIR}/../src/gds_processor.wasm"
+    COMMENT "Embedding fork modification notices"
 )

@@ -1,3 +1,4 @@
+// Modified by PenguinEino for TR-1um GDS Viewer (2026); based on Tiny Tapeout GDS Viewer. See NOTICE and LICENSE.
 import * as THREE from 'three';
 import * as OrbitControls from 'three/examples/jsm/controls/OrbitControls';
 import { GUI } from 'three/examples/jsm/libs/lil-gui.module.min.js';

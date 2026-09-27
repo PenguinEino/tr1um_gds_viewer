@@ -1,3 +1,4 @@
+// Modified by PenguinEino for TR-1um GDS Viewer (2026); based on Tiny Tapeout GDS Viewer. See NOTICE and LICENSE.
 export { WORKER_MSG_TYPE };
 
 const WORKER_MSG_TYPE = {

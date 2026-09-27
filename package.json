@@ -1,4 +1,5 @@
 {
+  "_notice": "Modified by PenguinEino for TR-1um GDS Viewer (2026); based on Tiny Tapeout GDS Viewer. See NOTICE and LICENSE.",
   "name": "tr1um_gds_viewer",
   "version": "1.0.0",
   "description": "OpenSUSI TR-1um drawing-layer GDS Viewer",

@@ -1,57 +1,15 @@
 # TR-1um GDS Viewer
 
-A browser-based 3D viewer for [OpenSUSI TR-1um](https://github.com/OpenSUSI/TR-1um) drawing-layer GDS files, forked from [Tiny Tapeout GDS Viewer](https://github.com/TinyTapeout/tinytapeout_gds_viewer). The 3D layer heights are illustrative and are not measured process thicknesses. This is a viewer, not a DRC, LVS, or MDP tool.
+**OpenSUSI TR-1um の半導体レイアウトを、ブラウザで立体的に眺めるビューア。**
+GDSファイル・URL・ISHI会のMPWプリセットから開いて、配線やセルを3D／2Dで確認できます。
 
-The interface starts in Japanese. Use the language selector to switch between 日本語, English, and 简体中文 without reloading the design.
+## [▶ ビューアを開く](https://penguineino.github.io/tr1um_gds_viewer/)
 
-## Open a design
+![TR-1umのGDSを3D表示した画面](docs/viewer.png)
 
-- Choose a whole chip from **MPW preset** to load it immediately. The 37 presets follow the chip headings in the [ISHI-KAI TR10-1 project index](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1), using each project's `src/` GDS directly from GitHub. The catalog is maintained in `src/gds_presets.js`.
-- Drop a `.gds` file on the import panel, or click the drop area to choose a local file. The GDS stays in your browser.
-- Paste an HTTPS URL ending in `.gds` and choose **Load URL**. GitHub `blob` URLs are converted to `raw.githubusercontent.com` URLs. The remote server must allow browser access with CORS; if it does not, download the file and upload it locally.
-- Share a direct link with `?url=<encoded GDS URL>`. Successful URL or preset loads update the address bar automatically. The viewer also retains the upstream `?pdk=` query option; TR-1um is the default.
+[Tiny Tapeout GDS Viewer](https://github.com/TinyTapeout/tinytapeout_gds_viewer) をforkし、TR-1um向けに調整しています。
+日本語・English・简体中文に対応。
 
-The viewer shows only layer types present in the loaded GDS that are in the TR-1um drawing-layer set below. It reports the number of other layer types omitted. You can load another file in the same tab after the current one finishes.
+[X / @Penguininin_](https://x.com/Penguininin_) · [ISHI会](https://ishi-kai.org/) · [ISHI会 Discord](https://discord.gg/Sj47dJk8x7)
 
-## 3D appearance
-
-TR-1um keeps the hue families of the PDK's KLayout palette with softer colors for lit 3D surfaces: green WN/AN, pink-purple AP, apricot GC, lavender GR, light-blue M1, silver-gray M2, and soft-blue M3. Contacts and vias are white/silver or gray. Labels have neutral text with dark outlines.
-
-WN (22% opacity), PO (24%), and PIN (3%) are translucent guides so large regions and opening/pin markers do not obscure the structure. They do not cast solid shadows. Conductors and contacts remain opaque, preserving face shading and readable connections. **Layers → Guide opacity** adjusts the guide layers present in the loaded GDS; hiding a layer also hides its labels.
-
-Surface stipples use the actual custom bitmaps from TR-1um's KLayout `.lyp` and KLayout's standard pattern definitions. Their one-pixel lines/dots and repeat periods are rendered in CSS screen pixels, as in KLayout, instead of growing with the layout when zoomed in. The layer list uses the same bitmap swatches. Sidewalls retain their shading and pin labels remain fully legible over the nearly transparent PIN geometry. **Layer patterns** switches the stipples on/off.
-
-The illustrative stack retains the previous sixfold slab thicknesses and extends contact/via spans by about 1.5×. Vias still meet both adjacent metals. Heights and spacing are visualization aids, not physical measurements. **View mode** switches between freely rotatable **3D** (the default, starting from above) and fixed top-down orthographic **2D**, with pan and zoom. **Cast shadows** applies in 3D and can be disabled on slower devices. Soft ambient and fill lighting keep back-facing and underside surfaces readable; the gentler key light retains face and height cues without black shadows. Layer filtering is unchanged.
-
-## TR-1um layer set
-
-**View Settings → Layer spacing ×** adjusts the dielectric spans from 0.25× to 3× (default: 2×; 1× uses the original base spacing). Wells, active regions, and gates stay in place; metal thicknesses stay constant. CO, V1, and TC23 stretch to remain joined to their conductors, and labels, pins, and pad-opening guides follow their associated metal. Camera position and layer visibility are preserved. The control changes illustrative display spacing, not calibrated physical dimensions.
-
-`WN 140/0`, `AP 3/1`, `AN 3/2`, `AR 3/3`, `AC 3/4`, `GC 8/1`, `GR 8/2`, `CO 11/0`, `M1 13/0`, `V1 19/0`, `M2 20/0`, and `PO 14/0`. The current MDP script also accepts `TC23 121/0` and `M3 122/0`, which appear when present. Text and pin layers `TXM1 48/0`, `PIN 48/1`, and `TXM2 49/0` are also shown.
-
-These mappings follow the [OpenSUSI GDSII table](https://github.com/OpenSUSI/TR-1um/blob/main/Document/TR-1um_GDSII_Table.xlsx), [KLayout layer palette](https://github.com/OpenSUSI/TR-1um/blob/main/libs.tech/klayout/tech/TR-1um.lyp), and [MDP input definitions](https://github.com/OpenSUSI/TR-1um/blob/main/libs.tech/klayout/tech/drc/run_mdp.drc). Generated masks and recognition layers, such as `NW`, `NF`, `PF`, implants, and `DLXXXX`, are excluded even if they are present in the input file. No MDP is run in the browser.
-
-## Development
-
-Requires Node.js 16 or newer:
-
-```sh
-npm ci
-npm run start
-```
-
-Open `http://localhost:5173/`. Run `npm run build` to create the static site in `dist/`.
-
-## Rebuild the GDS processor
-
-The source is in `gds_processor/`; the generated `src/gds_processor.js` and `src/gds_processor.wasm` are committed. Rebuild them after C++ changes using [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) 4.0.2, CMake, and the repository submodules:
-
-```sh
-git submodule update --init --recursive
-source /path/to/emsdk/emsdk_env.sh
-embuilder build zlib
-emcmake cmake -S gds_processor -B gds_processor/build_release -DCMAKE_BUILD_TYPE=Release
-cmake --build gds_processor/build_release -j4
-```
-
-The included GitHub Actions workflow builds and publishes `dist/` to GitHub Pages.
+[Apache-2.0](LICENSE) · [クレジット・依存ライブラリのライセンス](THIRD_PARTY_NOTICES.md)

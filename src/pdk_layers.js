@@ -1,3 +1,4 @@
+// Modified by PenguinEino for TR-1um GDS Viewer (2026); based on Tiny Tapeout GDS Viewer. See NOTICE and LICENSE.
 // The layers have to be declared in z order so the "Separate Layers" feature works correctly:
 export const PDK_LAYERS = {
   'TR-1um': [

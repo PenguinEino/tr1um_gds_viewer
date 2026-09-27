@@ -1,4 +1,5 @@
 <!doctype html>
+<!-- Modified by PenguinEino for TR-1um GDS Viewer (2026); based on Tiny Tapeout GDS Viewer. See NOTICE and LICENSE. -->
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
@@ -151,6 +152,57 @@
         color: white;
         cursor: pointer;
       }
+      #communityLinks {
+        position: fixed;
+        right: 14px;
+        bottom: max(12px, env(safe-area-inset-bottom));
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
+        border: 1px solid #ffffff26;
+        border-radius: 10px;
+        background: rgba(18, 22, 29, 0.94);
+      }
+      #communityLinks a {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+        color: #c5d0df;
+        text-decoration: none;
+      }
+      #communityLinks a:hover {
+        background: #ffffff18;
+      }
+      #communityLinks a:focus-visible {
+        outline: 2px solid #a7d1ff;
+        outline-offset: 2px;
+      }
+      #communityLinks img {
+        width: 22px;
+        height: 22px;
+        object-fit: contain;
+      }
+      #communityLinks .mono-icon {
+        filter: invert(1);
+      }
+      #communityLinks .ishi-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 4px;
+      }
+      #communityLinks .license-link {
+        width: auto;
+        padding: 0 6px;
+        font-size: 11px;
+      }
+      html .lil-gui.root {
+        max-height: calc(100dvh - 76px);
+      }
     </style>
   </head>
 
@@ -217,6 +269,59 @@
         <br /><span data-i18n="key4">4: 選択部分を拡大</span>
       </div>
     </div>
+
+    <nav id="communityLinks" aria-label="関連リンク" data-i18n-aria="Community links">
+      <a
+        href="https://github.com/PenguinEino/tr1um_gds_viewer"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="GitHub · ソースコード"
+        data-i18n-aria="Source repository"
+        title="GitHub · PenguinEino/tr1um_gds_viewer"
+      >
+        <img class="mono-icon" src="icons/github.svg" alt="" />
+      </a>
+      <a
+        href="https://x.com/Penguininin_"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="X · @Penguininin_"
+        title="X · @Penguininin_"
+      >
+        <img class="mono-icon" src="icons/x.svg" alt="" />
+      </a>
+      <a
+        href="https://ishi-kai.org/"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="ISHI会"
+        title="ISHI会"
+      >
+        <img
+          class="ishi-icon"
+          src="https://ishi-kai.org/assets/images/ishikai_icon.png"
+          referrerpolicy="no-referrer"
+          alt=""
+        />
+      </a>
+      <a
+        href="https://discord.gg/Sj47dJk8x7"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="ISHI会 Discord"
+        title="ISHI会 Discord"
+      >
+        <img class="mono-icon" src="icons/discord.svg" alt="" />
+      </a>
+      <a
+        class="license-link"
+        href="licenses/index.html"
+        target="_blank"
+        rel="noopener noreferrer"
+        data-i18n="Licenses"
+        >ライセンス</a
+      >
+    </nav>
 
     <script type="module" src="src/viewer.js"></script>
   </body>
