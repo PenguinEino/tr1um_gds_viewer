@@ -72,7 +72,7 @@ export function createPresetBrowser(onLoad) {
       const source = document.createElement('a');
       source.className = 'preset-circuit-source';
       source.textContent = '↗';
-      source.href = circuit.url;
+      source.href = circuit.names?.length ? circuit.url : preset.repository;
       source.target = '_blank';
       source.rel = 'noopener noreferrer';
       source.dataset.i18nAria = 'Circuit source';
