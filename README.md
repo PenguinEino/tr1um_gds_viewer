@@ -23,6 +23,8 @@ The illustrative stack retains the previous sixfold slab thicknesses and extends
 
 ## TR-1um layer set
 
+**View Settings → Layer spacing ×** adjusts the dielectric spans from 0.25× to 3× (1× restores the default). Wells, active regions, and gates stay in place; metal thicknesses stay constant. CO, V1, and TC23 stretch to remain joined to their conductors, and labels, pins, and pad-opening guides follow their associated metal. Camera position and layer visibility are preserved. The control changes illustrative display spacing, not calibrated physical dimensions.
+
 `WN 140/0`, `AP 3/1`, `AN 3/2`, `AR 3/3`, `AC 3/4`, `GC 8/1`, `GR 8/2`, `CO 11/0`, `M1 13/0`, `V1 19/0`, `M2 20/0`, and `PO 14/0`. The current MDP script also accepts `TC23 121/0` and `M3 122/0`, which appear when present. Text and pin layers `TXM1 48/0`, `PIN 48/1`, and `TXM2 49/0` are also shown.
 
 These mappings follow the [OpenSUSI GDSII table](https://github.com/OpenSUSI/TR-1um/blob/main/Document/TR-1um_GDSII_Table.xlsx), [KLayout layer palette](https://github.com/OpenSUSI/TR-1um/blob/main/libs.tech/klayout/tech/TR-1um.lyp), and [MDP input definitions](https://github.com/OpenSUSI/TR-1um/blob/main/libs.tech/klayout/tech/drc/run_mdp.drc). Generated masks and recognition layers, such as `NW`, `NF`, `PF`, implants, and `DLXXXX`, are excluded even if they are present in the input file. No MDP is run in the browser.

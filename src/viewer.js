@@ -7,6 +7,7 @@ import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
 import { GDS_PRESETS } from './gds_presets.js';
+import { getLayerSpacingTransform } from './layer_spacing.js';
 import {
   getLayerPattern,
   applyLayerPattern,
@@ -322,6 +323,7 @@ function init() {
     view_angle: '3D',
     shadows: PDK === 'TR-1um',
     layer_patterns: true,
+    layer_spacing: 1,
     filler_cells: true,
     top_cell_geometry: true,
     layers: [],
@@ -668,6 +670,10 @@ function initGUI() {
     .onChange(setViewMode);
   if (PDK === 'TR-1um') {
     guiViewSettings
+      .add(viewSettings, 'layer_spacing', 0.25, 3, 0.05)
+      .name('Layer spacing ×')
+      .onChange(updateLayerSpacing);
+    guiViewSettings
       .add(viewSettings, 'layer_patterns')
       .name('Layer patterns')
       .onChange((enabled) => {
@@ -764,11 +770,13 @@ function initGUI() {
     .onChange(function (new_value) {
       experimental_auto_rotation_speed = new_value;
     });
-  guiExperimentalSettings
-    .add(experimentalSettings, 'Separate layers', 0, 10, 0.01)
-    .onChange(function (new_value) {
-      experimental_separate_layers_target = new_value;
-    });
+  if (PDK !== 'TR-1um') {
+    guiExperimentalSettings
+      .add(experimentalSettings, 'Separate layers', 0, 10, 0.01)
+      .onChange(function (new_value) {
+        experimental_separate_layers_target = new_value;
+      });
+  }
 }
 
 function updateGuiAfterLoad() {
@@ -1629,12 +1637,60 @@ function cleanScene() {
   instanceClassTitleDiv.innerHTML = '';
 }
 
+function spacingTransform(name) {
+  return PDK === 'TR-1um'
+    ? getLayerSpacingTransform(name, viewSettings.layer_spacing)
+    : { scale: 1, offset: 0 };
+}
+
+function meshBoundsAtNode(mesh, matrix) {
+  const bounds = mesh.threejs_mesh.geometry.boundingBox.clone();
+  const layer = GDS.layers[GDS.makeLayerId(mesh.layer_number, mesh.layer_datatype)];
+  const { scale, offset } = spacingTransform(layer.name);
+  bounds.min.z = bounds.min.z * scale + offset;
+  bounds.max.z = bounds.max.z * scale + offset;
+  return bounds.applyMatrix4(matrix);
+}
+
+function updateLayerSpacing() {
+  if (!GDS.root_node || loadingInProgress) return;
+  for (const mesh of Object.values(GDS.meshes)) {
+    if (!mesh.instances.length) continue;
+    const layer = GDS.layers[GDS.makeLayerId(mesh.layer_number, mesh.layer_datatype)];
+    const { scale, offset } = spacingTransform(layer.name);
+    mesh.threejs_instanced_mesh.scale.z = scale;
+    mesh.threejs_instanced_mesh.position.z = offset;
+  }
+  scene_root_group.traverse((object) => {
+    if (!object.isSprite) return;
+    const { layerName, baseZ } = object.userData;
+    const { scale, offset } = spacingTransform(layerName);
+    object.position.z = baseZ * scale + offset;
+  });
+  // Keep selection boxes, zoom-to-cell and shadow coverage in sync without
+  // rebuilding instances or changing the current camera and visibility.
+  function refreshBounds(node) {
+    node.scene_bounding_box.makeEmpty();
+    for (const name of GDS.cells[node.cell_name].meshes_names) {
+      node.scene_bounding_box.union(meshBoundsAtNode(GDS.meshes[name], node.world_matrix));
+    }
+    for (const child of node.children) {
+      refreshBounds(child);
+      node.scene_bounding_box.union(child.scene_bounding_box);
+    }
+  }
+  refreshBounds(GDS.root_node);
+  updateSceneLighting();
+}
+
 function buildSceneDoNodeCalcs(node, parent_matrix) {
   const node_matrix = node.matrix.clone();
   node_matrix.premultiply(parent_matrix);
   node.world_matrix = node_matrix;
 
   const cell = GDS.cells[node.cell_name];
+  // An isolated node can be reused; keep only children of the current scene.
+  node.children = [];
 
   // Stats
   if (GDS.view_stats.instances[node.cell_name] == undefined) {
@@ -1656,8 +1712,7 @@ function buildSceneDoNodeCalcs(node, parent_matrix) {
 
     GDS.meshes[mesh_name].instances.push(instance_data);
 
-    mesh_bounding_box = GDS.meshes[mesh_name].threejs_mesh.geometry.boundingBox.clone();
-    mesh_bounding_box.applyMatrix4(node_matrix);
+    mesh_bounding_box = meshBoundsAtNode(GDS.meshes[mesh_name], node_matrix);
 
     if (node.scene_bounding_box == null) {
       node.scene_bounding_box = mesh_bounding_box.clone();
@@ -1718,6 +1773,9 @@ function buildMeshesScene(top_node, main_matrix) {
 
     instanced_mesh.name = reference_mesh.name;
     const layer = GDS.layers[GDS.makeLayerId(mesh.layer_number, mesh.layer_datatype)];
+    const { scale, offset } = spacingTransform(layer.name);
+    instanced_mesh.scale.z = scale;
+    instanced_mesh.position.z = offset;
     instanced_mesh.castShadow = !['WN', 'PO', 'PIN', 'TXM1', 'TXM2'].includes(layer.name);
     // A translucent guide volume has two surfaces; shadowing both creates
     // doubled dark silhouettes that obscure the structures being explained.
@@ -1789,6 +1847,9 @@ function buildLabelsScene() {
       });
       const sprite = new THREE.Sprite(material);
       sprite.position.set(label.x, label.y, label.z).applyMatrix4(node.world_matrix);
+      sprite.userData = { layerName: layer.name, baseZ: sprite.position.z };
+      const { scale, offset } = spacingTransform(layer.name);
+      sprite.position.z = sprite.userData.baseZ * scale + offset;
       sprite.scale.set(Math.max(2, label.text.length * 1.1), 2, 1);
       sprite.layers.set(getTHREEJSLayerFromGDSLayerId(layerId));
       sprite.raycast = () => {};
@@ -1819,24 +1880,7 @@ function buildScene(node, reset_camera = true) {
 
   buildMeshesScene(GDS.root_node, main_matrix);
   buildLabelsScene();
-  if (PDK === 'TR-1um') {
-    const bounds = GDS.root_node.scene_bounding_box;
-    const center = bounds.getCenter(new THREE.Vector3());
-    const radius = Math.max(1, bounds.getSize(new THREE.Vector3()).length() / 2);
-    keyLight.target.position.copy(center);
-    keyLight.position
-      .copy(center)
-      .add(new THREE.Vector3(-0.35, -0.5, 1).multiplyScalar(radius * 2));
-    Object.assign(keyLight.shadow.camera, {
-      left: -radius,
-      right: radius,
-      top: radius,
-      bottom: -radius,
-      near: 0.1,
-      far: radius * 5,
-    });
-    keyLight.shadow.camera.updateProjectionMatrix();
-  }
+  updateSceneLighting();
 
   // // Test for checking nodes bounding boxes
   // // Those bounding boxes could then be used to filter objects for raycasting
@@ -1873,4 +1917,22 @@ function buildScene(node, reset_camera = true) {
   viewSettings.filler_cells = true;
   viewSettings.top_cell_geometry = true;
   buildInstancesNamesFolder(viewSettings.instances['_ SORT_BY _'], true);
+}
+
+function updateSceneLighting() {
+  if (PDK !== 'TR-1um') return;
+  const bounds = GDS.root_node.scene_bounding_box;
+  const center = bounds.getCenter(new THREE.Vector3());
+  const radius = Math.max(1, bounds.getSize(new THREE.Vector3()).length() / 2);
+  keyLight.target.position.copy(center);
+  keyLight.position.copy(center).add(new THREE.Vector3(-0.35, -0.5, 1).multiplyScalar(radius * 2));
+  Object.assign(keyLight.shadow.camera, {
+    left: -radius,
+    right: radius,
+    top: radius,
+    bottom: -radius,
+    near: 0.1,
+    far: radius * 5,
+  });
+  keyLight.shadow.camera.updateProjectionMatrix();
 }
