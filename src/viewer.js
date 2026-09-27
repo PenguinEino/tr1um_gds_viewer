@@ -8,6 +8,7 @@ import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
 import { GDS_PRESETS } from './gds_presets.js';
 import { getLayerSpacingTransform } from './layer_spacing.js';
+import { t, setText, setLanguage } from './i18n.js';
 import {
   getLayerPattern,
   applyLayerPattern,
@@ -16,7 +17,12 @@ import {
 } from './layer_patterns.js';
 
 function normalizeGdsUrl(value) {
-  const url = new URL(value);
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(t('Invalid URL'));
+  }
   if (url.hostname === 'github.com') {
     const parts = url.pathname.split('/').filter(Boolean);
     if (parts.length >= 5 && parts[2] === 'blob') {
@@ -27,8 +33,9 @@ function normalizeGdsUrl(value) {
   if (url.protocol === 'http:' && !['localhost', '127.0.0.1', '::1'].includes(url.hostname)) {
     url.protocol = 'https:';
   }
-  if (!['https:', 'http:'].includes(url.protocol)) throw new Error('Use an HTTP(S) GDS URL');
-  if (!/\.(gds|oas)$/i.test(url.pathname)) throw new Error('URL must point to a .gds or .oas file');
+  if (!['https:', 'http:'].includes(url.protocol)) throw new Error(t('Use an HTTP(S) GDS URL'));
+  if (!/\.(gds|oas)$/i.test(url.pathname))
+    throw new Error(t('URL must point to a .gds or .oas file'));
   return url.href;
 }
 
@@ -102,6 +109,7 @@ const dropZone = document.getElementById('dropZone');
 const urlForm = document.getElementById('urlForm');
 const urlInput = document.getElementById('urlInput');
 const presetSelect = document.getElementById('presetSelect');
+const languageSelect = document.getElementById('languageSelect');
 const importSummary = document.getElementById('importSummary');
 let loadingInProgress = false;
 let pendingSourceUrl = null;
@@ -188,6 +196,14 @@ let guiLayersFolder,
 
 let viewSettings, performanceSettings, experimentalSettings;
 let keyLight;
+let guiRoot;
+
+setLanguage('ja');
+languageSelect.addEventListener('change', () => {
+  setLanguage(languageSelect.value);
+  translateGui();
+  if (!GDS.root_node) instanceClassTitleDiv.textContent = t('DESIGN');
+});
 
 // Debug FPS stats
 let show_fps_stats = false;
@@ -281,6 +297,7 @@ gdsProcessorWorker.addEventListener('message', function (event) {
     try {
       buildScene(null, true);
       updateGuiAfterLoad();
+      translateGui();
       initWindowEvents();
       const pageUrl = new URL(location.href);
       pageUrl.searchParams.delete('model');
@@ -289,21 +306,24 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       history.replaceState(null, '', pageUrl);
       const sourceUrl = pendingSourceUrl ? normalizeGdsUrl(pendingSourceUrl) : null;
       presetSelect.value = GDS_PRESETS.find((preset) => preset.url === sourceUrl)?.url ?? '';
-      loadingStatus.innerText = 'Loaded';
+      setText(loadingStatus, 'Loaded');
       document.getElementById('importControls').open = false;
       if (loadedLayerSummary) {
-        importSummary.innerText = `${loadedLayerSummary.visible.size} drawing/label layers shown · ${loadedLayerSummary.excluded.length} other layer types excluded`;
+        setText(importSummary, 'layerSummary', {
+          shown: loadedLayerSummary.visible.size,
+          excluded: loadedLayerSummary.excluded.length,
+        });
       } else {
-        importSummary.innerText = 'Loaded (layer count is available for GDS files)';
+        setText(importSummary, 'Loaded (layer count is available for GDS files)');
       }
     } catch (error) {
-      loadingStatus.innerText = `Could not display GDS: ${error.message}`;
+      setText(loadingStatus, 'displayError', { error: error.message });
       console.error(error);
     }
     setLoadingInProgress(false);
   } else if (event.data.type == WORKER_MSG_TYPE.PROCESS_ERROR) {
     setLoadingInProgress(false);
-    loadingStatus.innerText = `Processing failed: ${event.data.message}`;
+    setText(loadingStatus, 'processingError', { error: event.data.message });
   }
 });
 
@@ -327,7 +347,7 @@ function init() {
     view_angle: '3D',
     shadows: PDK === 'TR-1um',
     layer_patterns: true,
-    layer_spacing: 1,
+    layer_spacing: 2,
     filler_cells: true,
     top_cell_geometry: true,
     layers: [],
@@ -340,6 +360,7 @@ function init() {
   setSectionViewVisibility(experimental_show_section_on);
 
   initGUI();
+  translateGui();
 
   initProcessLayers();
 
@@ -347,7 +368,7 @@ function init() {
     urlInput.value = GDS_URL;
     loadGDS(GDS_URL);
   } else {
-    loadingStatus.innerText = '';
+    setText(loadingStatus, 'blank');
   }
 }
 
@@ -362,23 +383,23 @@ function initLayerVisibility() {
 
 function loadGDS(inputURL) {
   if (loadingInProgress) {
-    loadingStatus.innerText = 'Wait for the current file to finish loading';
+    setText(loadingStatus, 'Wait for the current file to finish loading');
     return;
   }
   let fileURL;
   try {
     fileURL = normalizeGdsUrl(inputURL);
   } catch (error) {
-    loadingStatus.innerText = error.message;
+    setText(loadingStatus, 'detail', { error: error.message });
     return;
   }
   setLoadingInProgress(true);
   pendingSourceUrl = inputURL.trim();
-  loadingStatus.innerText = `Downloading ${fileURL}`;
+  setText(loadingStatus, 'downloading', { url: fileURL });
 
   fetchWithProgressArrayBuffer(fileURL)
     .then((buffer) => {
-      loadingStatus.innerText = 'Processing file';
+      setText(loadingStatus, 'Processing file');
 
       const filename = /\.oas$/i.test(new URL(fileURL).pathname) ? 'remote.oas' : 'remote.gds';
       const data = new Uint8Array(buffer); // File content as binary data
@@ -389,7 +410,7 @@ function loadGDS(inputURL) {
     })
     .catch((err) => {
       setLoadingInProgress(false);
-      loadingStatus.innerText = `Could not fetch GDS: ${err.message}. Check the URL and CORS access, or upload the file.`;
+      setText(loadingStatus, 'fetchError', { error: err.message });
       console.error('GDS fetch failed:', err);
     });
 }
@@ -399,13 +420,13 @@ function loadGDS(inputURL) {
  */
 function loadLocalGDS(file) {
   if (loadingInProgress) {
-    loadingStatus.innerText = 'Wait for the current file to finish loading';
+    setText(loadingStatus, 'Wait for the current file to finish loading');
     return;
   }
   setLoadingInProgress(true);
   pendingSourceUrl = null;
   const reader = new FileReader();
-  loadingStatus.innerText = 'Processing file';
+  setText(loadingStatus, 'Processing file');
   reader.onload = function (event) {
     const arrayBuffer = event.target.result;
     try {
@@ -414,13 +435,13 @@ function loadLocalGDS(file) {
       initLayerVisibility();
     } catch (error) {
       setLoadingInProgress(false);
-      loadingStatus.innerText = 'Error processing file';
+      setText(loadingStatus, 'Error processing file');
       console.error('Error processing file', error);
     }
   };
   reader.onerror = function (event) {
     setLoadingInProgress(false);
-    loadingStatus.innerText = 'Error processing file';
+    setText(loadingStatus, 'Error processing file');
   };
   reader.readAsArrayBuffer(file);
 }
@@ -460,7 +481,7 @@ function resetLoadedDesign() {
   viewSettings.layers = [];
   viewSettings.layers_visibility = [];
   cameraAnimmation.initialized = false;
-  importSummary.innerText = '';
+  setText(importSummary, 'blank');
 }
 
 function processCells() {
@@ -520,7 +541,7 @@ async function fetchWithProgressArrayBuffer(url) {
     const contentLength = response.headers.get('content-length');
     if (!contentLength) {
       console.warn('Unable to retrieve content-length. Progress tracking will not work.');
-      loadingStatus.innerText = 'Error loading file';
+      setText(loadingStatus, 'Error loading file');
       return response.arrayBuffer(); // Fallback to standard ArrayBuffer
     }
 
@@ -540,7 +561,7 @@ async function fetchWithProgressArrayBuffer(url) {
       loaded += value.length;
       const progress = ((loaded / total) * 100).toFixed(0);
       // console.log(`Progress: ${progress}%`);
-      loadingStatus.innerText = `${progress}%`;
+      setText(loadingStatus, 'progress', { percent: progress });
 
       // Store the chunk
       chunks.push(value);
@@ -649,67 +670,123 @@ function init3D() {
   animate();
 }
 
-function initGUI() {
-  const gui = new GUI();
+function translatedFolder(parent, key, params = {}) {
+  const folder = parent.addFolder(t(key, params));
+  folder.translation = { key, params };
+  return folder;
+}
 
-  let guiViewSettings = gui.addFolder('View Settings');
+function translateGui() {
+  if (!guiRoot) return;
+  guiRoot.title(t('Controls'));
+  for (const folder of guiRoot.foldersRecursive()) {
+    if (folder.translation) folder.title(t(folder.translation.key, folder.translation.params));
+  }
+  const names = {
+    view_angle: 'View mode',
+    layer_spacing: 'Layer spacing ×',
+    layer_patterns: 'Layer patterns',
+    shadows: 'Cast shadows',
+    filler_cells: 'Filler cells',
+    top_cell_geometry: 'Top cell geometry',
+    logarithmicDepthBuffer: 'Logarithmic depth buffer',
+    antialias: 'Antialiasing',
+    '_ ALL _': 'ALL',
+    '_ SORT_BY _': 'Sort By',
+  };
+  for (const controller of guiRoot.controllersRecursive()) {
+    const object = controller.object;
+    if (
+      [viewSettings, performanceSettings, experimentalSettings, viewSettings.instances].includes(
+        object,
+      )
+    ) {
+      if (['isoleate_selection_or_back', 'zoom_selection'].includes(controller.property)) continue;
+      controller.name(t(names[controller.property] ?? controller.property));
+      if (controller.property === '_ SORT_BY _') {
+        controller
+          .options({ [t('Name')]: 'Name', [t('Count')]: 'Count' })
+          .onChange((value) => buildInstancesNamesFolder(value));
+      }
+    } else if (object === viewSettings.layers_visibility && controller.property === 'ALL') {
+      controller.name(t('ALL'));
+    }
+  }
+  const back = isolation_history[isolation_history.length - 1];
+  guiIsolateSelectionButton.name(
+    selected_object
+      ? t('isolate', { name: selected_object.instance_name })
+      : back
+        ? t('back', { name: back.instance_name })
+        : t('Isolate selection / Back'),
+  );
+  guiZoomSelectionButton.name(
+    selected_object ? t('zoom', { name: selected_object.instance_name }) : t('Zoom selection'),
+  );
+}
+
+function initGUI() {
+  const gui = new GUI({ title: t('Controls') });
+  guiRoot = gui;
+
+  let guiViewSettings = translatedFolder(gui, 'View Settings');
   guiViewSettings.open();
 
-  guiLayersFolder = gui.addFolder('Layers');
+  guiLayersFolder = translatedFolder(gui, 'Layers');
   guiLayersFolder.open();
 
-  guiInstancesFolder = gui.addFolder('Cells/Instances');
+  guiInstancesFolder = translatedFolder(gui, 'Cells/Instances');
   guiInstancesFolder.close();
 
-  let guiPerformanceSettings = gui.addFolder('Performance');
+  let guiPerformanceSettings = translatedFolder(gui, 'Performance');
   guiPerformanceSettings.close();
 
-  let guiExperimentalSettings = gui.addFolder('Experimental');
+  let guiExperimentalSettings = translatedFolder(gui, 'Experimental');
   guiExperimentalSettings.close();
 
   // View Settings
   guiViewSettings
     .add(viewSettings, 'view_angle', ['3D', '2D'])
-    .name('View mode')
+    .name(t('View mode'))
     .onChange(setViewMode);
   if (PDK === 'TR-1um') {
     guiViewSettings
       .add(viewSettings, 'layer_spacing', 0.25, 3, 0.05)
-      .name('Layer spacing ×')
+      .name(t('Layer spacing ×'))
       .onChange(updateLayerSpacing);
     guiViewSettings
       .add(viewSettings, 'layer_patterns')
-      .name('Layer patterns')
+      .name(t('Layer patterns'))
       .onChange((enabled) => {
         for (const layer of Object.values(GDS.layers))
           setLayerPatternEnabled(layer.threejs_material, enabled);
       });
-    guiViewSettings.add(viewSettings, 'shadows').name('Cast shadows').onChange(updateShadows);
+    guiViewSettings.add(viewSettings, 'shadows').name(t('Cast shadows')).onChange(updateShadows);
   }
   viewSettings['isoleate_selection_or_back'] = function () {
     isolateSelectionOrGoBack();
   };
   guiIsolateSelectionButton = guiViewSettings.add(viewSettings, 'isoleate_selection_or_back');
-  guiIsolateSelectionButton.name('Isolate selection / Back');
+  guiIsolateSelectionButton.name(t('Isolate selection / Back'));
   guiIsolateSelectionButton.disable();
 
   viewSettings['zoom_selection'] = function () {
     zoomSelection();
   };
   guiZoomSelectionButton = guiViewSettings.add(viewSettings, 'zoom_selection');
-  guiZoomSelectionButton.name('Zoom selection');
+  guiZoomSelectionButton.name(t('Zoom selection'));
   guiZoomSelectionButton.disable();
 
   guiViewSettings
     .add(viewSettings, 'filler_cells')
-    .name('Filler cells')
+    .name(t('Filler cells'))
     .listen()
     .onChange(function (new_value) {
       setFillerCellsVisibility(new_value);
     });
   guiViewSettings
     .add(viewSettings, 'top_cell_geometry')
-    .name('Top cell geometry')
+    .name(t('Top cell geometry'))
     .listen()
     .onChange(function (new_value) {
       setTopCellGeometryVisibility(new_value);
@@ -721,7 +798,7 @@ function initGUI() {
   viewSettings.instances['list'] = [];
   guiInstancesFolder
     .add(viewSettings.instances, '_ ALL _')
-    .name('ALL')
+    .name(t('ALL'))
     .onChange(function (new_value) {
       for (let cell_name in GDS.view_stats.instances) {
         viewSettings.instances.list[cell_name] = new_value;
@@ -730,8 +807,8 @@ function initGUI() {
     });
   guiInstancesFolder
     .add(viewSettings.instances, '_ SORT_BY _')
-    .options(['Name', 'Count'])
-    .name('Sort By')
+    .options({ [t('Name')]: 'Name', [t('Count')]: 'Count' })
+    .name(t('Sort By'))
     .onChange(function (new_value) {
       buildInstancesNamesFolder(new_value);
     });
@@ -849,7 +926,7 @@ function updateGuiAfterLoad() {
   // Keep conductors opaque by default to preserve clear interconnect tracing.
   const guides = visibleLayers.filter(([, layer]) => layer.default_opacity < 1);
   if (guides.length) {
-    const opacityFolder = guiLayersFolder.addFolder('Guide opacity');
+    const opacityFolder = translatedFolder(guiLayersFolder, 'Guide opacity');
     opacityFolder.close();
     for (const [, layer] of guides) {
       const material = layer.threejs_material;
@@ -874,9 +951,10 @@ function buildInstancesNamesFolder(sorted_by, rebuild = false) {
 
   let sorted_cell_names = Object.keys(GDS.view_stats.instances);
 
-  guiInstancesNamesFolder = guiInstancesFolder.addFolder(
-    'Cell types: ' + sorted_cell_names.length + ' - Instances: ' + GDS.view_stats.total_instances,
-  );
+  guiInstancesNamesFolder = translatedFolder(guiInstancesFolder, 'cellCounts', {
+    types: sorted_cell_names.length,
+    count: GDS.view_stats.total_instances,
+  });
 
   if (sorted_by == 'Name') {
     sorted_cell_names.sort();
@@ -1079,7 +1157,7 @@ function clearSelection() {
   if (isolation_history && isolation_history.length > 0) {
     const back_node = isolation_history[isolation_history.length - 1];
     const item = document.createElement('div');
-    item.textContent = `back to ${back_node.instance_name} (${back_node.cell_name})`;
+    setText(item, 'back', { name: `${back_node.instance_name} (${back_node.cell_name})` });
     item.className = 'selection_link';
     item.onmousedown = function () {
       isolation_history.pop();
@@ -1088,12 +1166,12 @@ function clearSelection() {
     informationDiv.appendChild(item);
 
     guiIsolateSelectionButton.enable();
-    guiIsolateSelectionButton.name('Back to ' + back_node.instance_name);
+    guiIsolateSelectionButton.name(t('back', { name: back_node.instance_name }));
   } else {
-    guiIsolateSelectionButton.name('Isolate selection / Back');
+    guiIsolateSelectionButton.name(t('Isolate selection / Back'));
     guiIsolateSelectionButton.disable();
   }
-  guiZoomSelectionButton.name('Zoom selection');
+  guiZoomSelectionButton.name(t('Zoom selection'));
   guiZoomSelectionButton.disable();
 
   selected_object = undefined;
@@ -1107,7 +1185,7 @@ function clearSelection() {
 function selectNode(graph_node) {
   // Display selection info:
   const heading = document.createElement('div');
-  heading.textContent = 'SELECTION:';
+  setText(heading, 'SELECTION:');
   informationDiv.appendChild(heading);
   let tree_list = [];
   let current_node = graph_node;
@@ -1149,10 +1227,10 @@ function selectNode(graph_node) {
   scene_root_group.add(selection_helper);
 
   guiIsolateSelectionButton.enable();
-  guiIsolateSelectionButton.name('Isolate: ' + graph_node.instance_name);
+  guiIsolateSelectionButton.name(t('isolate', { name: graph_node.instance_name }));
 
   guiZoomSelectionButton.enable();
-  guiZoomSelectionButton.name('Zoom: ' + graph_node.instance_name);
+  guiZoomSelectionButton.name(t('zoom', { name: graph_node.instance_name }));
 }
 
 function selectParent() {
@@ -1873,7 +1951,7 @@ function buildScene(node, reset_camera = true) {
 
   if (node == null) {
     const topCell = GDS.primaryTopCell();
-    if (!topCell) throw new Error('No displayable top cell in GDS');
+    if (!topCell) throw new Error(t('No displayable top cell in GDS'));
     GDS.root_node = GDS.addNode(topCell, topCell, new THREE.Matrix4(), null);
   } else {
     node.scene_bounding_box = null;
@@ -1921,6 +1999,7 @@ function buildScene(node, reset_camera = true) {
   viewSettings.filler_cells = true;
   viewSettings.top_cell_geometry = true;
   buildInstancesNamesFolder(viewSettings.instances['_ SORT_BY _'], true);
+  translateGui();
 }
 
 function updateSceneLighting() {

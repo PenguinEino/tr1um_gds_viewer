@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="ja">
   <head>
     <meta charset="utf-8" />
     <title>TR-1um GDS Viewer</title>
@@ -44,6 +44,13 @@
         border: 1px solid #60708d;
         border-radius: 8px;
         color: white;
+      }
+      #languagePicker {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 8px;
       }
       #loadPanel summary {
         cursor: pointer;
@@ -132,6 +139,9 @@
         --width: 300px;
         /* --name-width: 65%; */
       }
+      html .lil-gui .children:empty::before {
+        content: var(--gui-empty-label, '未読み込み');
+      }
 
       .selection_link {
         pointer-events: auto;
@@ -146,39 +156,65 @@
 
   <body>
     <div id="crossSection"></div>
-    <section id="loadPanel" aria-label="GDS input">
+    <section id="loadPanel" aria-label="GDS読み込み" data-i18n-aria="GDS input">
+      <div id="languagePicker">
+        <label for="languageSelect" data-i18n="Language">言語</label>
+        <select id="languageSelect">
+          <option value="ja" selected>日本語</option>
+          <option value="en">English</option>
+          <option value="zh-CN">简体中文</option>
+        </select>
+      </div>
       <details id="importControls" open>
-        <summary>TR-1um GDS Viewer · Open GDS</summary>
-        <label for="presetSelect">MPW preset</label>
+        <summary>TR-1um GDS Viewer · <span data-i18n="Open GDS">GDSを開く</span></summary>
+        <label for="presetSelect" data-i18n="MPW preset">MPWプリセット</label>
         <div id="presetPicker">
           <select id="presetSelect">
-            <option value="">Select a chip…</option>
+            <option value="" data-i18n="Select a chip…">チップを選択…</option>
           </select>
         </div>
-        <div id="dropZone" role="button" tabindex="0">Drop a GDS file here or click to select</div>
+        <div
+          id="dropZone"
+          role="button"
+          tabindex="0"
+          data-i18n="Drop a GDS file here or click to select"
+        >
+          GDSファイルをドロップ、またはクリックして選択
+        </div>
         <form id="urlForm">
           <input
             id="urlInput"
             type="url"
             placeholder="https://…/design.gds"
-            aria-label="GDS file URL"
+            aria-label="GDSファイルのURL"
+            data-i18n-aria="GDS file URL"
             required
           />
-          <button type="submit">Load URL</button>
+          <button type="submit" data-i18n="Load URL">URLから読込</button>
         </form>
-        <button id="sampleButton" type="button">Load OpenSUSI sample</button>
+        <button id="sampleButton" type="button" data-i18n="Load OpenSUSI sample">
+          OpenSUSIのサンプルを開く
+        </button>
       </details>
       <p id="loadingStatus" role="status"></p>
       <p id="importSummary"></p>
-      <p>Drawing layers only · illustrative 3D heights</p>
+      <p data-i18n="Drawing layers only · illustrative 3D heights">
+        描画レイヤーのみ表示・高さは模式値
+      </p>
     </section>
 
     <div style="position: absolute; color: white; left: 5px; bottom: 5px; pointer-events: none">
-      <div id="instanceClassTitle" class="textShadow">DESIGN</div>
+      <div id="instanceClassTitle" class="textShadow">デザイン</div>
       <div id="information" class="textShadow"></div>
       <div class="textShadow">
-        <br />KEYS <br />1: Hide Fill, Decap, Tap cells <br />2: Hide top cell geometry <br />3:
-        Isolate selection / back <br />4: Zoom to selection
+        <br /><span data-i18n="KEYS">キー操作</span> <br /><span data-i18n="key1"
+          >1: フィラー・デカップリング・タップセルの表示切替</span
+        >
+        <br /><span data-i18n="key2">2: トップセルの図形の表示切替</span> <br /><span
+          data-i18n="key3"
+          >3: 選択部分のみ表示／戻る</span
+        >
+        <br /><span data-i18n="key4">4: 選択部分を拡大</span>
       </div>
     </div>
 

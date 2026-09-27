@@ -2,6 +2,8 @@
 
 A browser-based 3D viewer for [OpenSUSI TR-1um](https://github.com/OpenSUSI/TR-1um) drawing-layer GDS files, forked from [Tiny Tapeout GDS Viewer](https://github.com/TinyTapeout/tinytapeout_gds_viewer). The 3D layer heights are illustrative and are not measured process thicknesses. This is a viewer, not a DRC, LVS, or MDP tool.
 
+The interface starts in Japanese. Use the language selector to switch between 日本語, English, and 简体中文 without reloading the design.
+
 ## Open a design
 
 - Choose a whole chip from **MPW preset** to load it immediately. The 37 presets follow the chip headings in the [ISHI-KAI TR10-1 project index](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1), using each project's `src/` GDS directly from GitHub. The catalog is maintained in `src/gds_presets.js`.
@@ -23,7 +25,7 @@ The illustrative stack retains the previous sixfold slab thicknesses and extends
 
 ## TR-1um layer set
 
-**View Settings → Layer spacing ×** adjusts the dielectric spans from 0.25× to 3× (1× restores the default). Wells, active regions, and gates stay in place; metal thicknesses stay constant. CO, V1, and TC23 stretch to remain joined to their conductors, and labels, pins, and pad-opening guides follow their associated metal. Camera position and layer visibility are preserved. The control changes illustrative display spacing, not calibrated physical dimensions.
+**View Settings → Layer spacing ×** adjusts the dielectric spans from 0.25× to 3× (default: 2×; 1× uses the original base spacing). Wells, active regions, and gates stay in place; metal thicknesses stay constant. CO, V1, and TC23 stretch to remain joined to their conductors, and labels, pins, and pad-opening guides follow their associated metal. Camera position and layer visibility are preserved. The control changes illustrative display spacing, not calibrated physical dimensions.
 
 `WN 140/0`, `AP 3/1`, `AN 3/2`, `AR 3/3`, `AC 3/4`, `GC 8/1`, `GR 8/2`, `CO 11/0`, `M1 13/0`, `V1 19/0`, `M2 20/0`, and `PO 14/0`. The current MDP script also accepts `TC23 121/0` and `M3 122/0`, which appear when present. Text and pin layers `TXM1 48/0`, `PIN 48/1`, and `TXM2 49/0` are also shown.
 
