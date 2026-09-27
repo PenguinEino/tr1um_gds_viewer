@@ -414,7 +414,15 @@ function processGDS(filename, data) {
 }
 
 function resetLoadedDesign() {
+  // Isolation history belongs to the previous GDS, not the next one.
+  isolation_history = [];
+  cameraAnimmation.animate = false;
   cleanScene();
+  if (selection_helper) {
+    selection_helper.geometry.dispose();
+    selection_helper.material.dispose();
+    selection_helper = undefined;
+  }
   for (const mesh of Object.values(GDS.meshes)) mesh.threejs_mesh.geometry.dispose();
   for (const texture of labelTextures.values()) texture.dispose();
   labelTextures = new Map();
@@ -1062,8 +1070,9 @@ function clearSelection() {
 
   selected_object = undefined;
   if (selection_helper) {
-    scene_root_group.remove(selection_helper);
-    // selection_helper = undefined;
+    // cleanScene runs both when an import starts and when its meshes arrive.
+    // The old root may already be gone on the second call.
+    selection_helper.removeFromParent();
   }
 }
 
