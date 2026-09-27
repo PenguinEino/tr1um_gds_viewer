@@ -101,6 +101,7 @@ const urlForm = document.getElementById('urlForm');
 const urlInput = document.getElementById('urlInput');
 const importSummary = document.getElementById('importSummary');
 let loadingInProgress = false;
+let pendingSourceUrl = null;
 let loadedLayerSummary;
 let labelTextures = new Map();
 
@@ -264,6 +265,11 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       buildScene(null, true);
       updateGuiAfterLoad();
       initWindowEvents();
+      const pageUrl = new URL(location.href);
+      pageUrl.searchParams.delete('model');
+      if (pendingSourceUrl) pageUrl.searchParams.set('url', pendingSourceUrl);
+      else pageUrl.searchParams.delete('url');
+      history.replaceState(null, '', pageUrl);
       loadingStatus.innerText = 'Loaded';
       document.getElementById('importControls').open = false;
       if (loadedLayerSummary) {
@@ -299,7 +305,7 @@ function init() {
   };
 
   viewSettings = {
-    view_angle: PDK === 'TR-1um' ? '3D' : 'Top',
+    view_angle: '3D',
     shadows: PDK === 'TR-1um',
     layer_patterns: true,
     filler_cells: true,
@@ -347,6 +353,7 @@ function loadGDS(inputURL) {
     return;
   }
   loadingInProgress = true;
+  pendingSourceUrl = inputURL.trim();
   loadingStatus.innerText = `Downloading ${fileURL}`;
 
   fetchWithProgressArrayBuffer(fileURL)
@@ -376,6 +383,7 @@ function loadLocalGDS(file) {
     return;
   }
   loadingInProgress = true;
+  pendingSourceUrl = null;
   const reader = new FileReader();
   loadingStatus.innerText = 'Processing file';
   reader.onload = function (event) {
@@ -641,9 +649,9 @@ function initGUI() {
 
   // View Settings
   guiViewSettings
-    .add(viewSettings, 'view_angle', ['3D', 'Top'])
-    .name('View angle')
-    .onChange(() => zoomNode(GDS.root_node));
+    .add(viewSettings, 'view_angle', ['3D', '2D'])
+    .name('View mode')
+    .onChange(setViewMode);
   if (PDK === 'TR-1um') {
     guiViewSettings
       .add(viewSettings, 'layer_patterns')
@@ -652,13 +660,7 @@ function initGUI() {
         for (const layer of Object.values(GDS.layers))
           setLayerPatternEnabled(layer.threejs_material, enabled);
       });
-    guiViewSettings
-      .add(viewSettings, 'shadows')
-      .name('Cast shadows')
-      .onChange((enabled) => {
-        renderer.shadowMap.enabled = enabled;
-        for (const layer of Object.values(GDS.layers)) layer.threejs_material.needsUpdate = true;
-      });
+    guiViewSettings.add(viewSettings, 'shadows').name('Cast shadows').onChange(updateShadows);
   }
   viewSettings['isoleate_selection_or_back'] = function () {
     isolateSelectionOrGoBack();
@@ -902,7 +904,7 @@ function animate() {
   }
 
   // Auto rotation
-  if (experimental_auto_rotation && scene_root_group) {
+  if (experimental_auto_rotation && scene_root_group && viewSettings.view_angle === '3D') {
     let scene_center = new THREE.Vector3();
     GDS.root_node.scene_bounding_box.getCenter(scene_center);
     let mov_x = scene_center.x;
@@ -1233,6 +1235,15 @@ function zoomNode(node) {
 
     // setCameraPositionForFitInView(bbox, camera);
     getCameraPositionForFitInView(bbox, cameraAnimmation.positionTarget);
+    if (camera.isOrthographicCamera) {
+      cameraAnimmation.animate = false;
+      camera.position.copy(cameraAnimmation.positionTarget);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(center);
+      cameraControls.dispose();
+      createCameraControls(center);
+      return;
+    }
     cameraAnimmation.upTarget.x = 0;
     cameraAnimmation.upTarget.y = 1;
     cameraAnimmation.upTarget.z = 0;
@@ -1273,6 +1284,12 @@ function moveCameraToNode(node) {
 
 function createCameraControls(target) {
   cameraControls = new OrbitControls.OrbitControls(camera, renderer.domElement);
+  cameraControls.enableRotate = viewSettings.view_angle === '3D';
+  if (viewSettings.view_angle === '2D') {
+    cameraControls.mouseButtons.LEFT = THREE.MOUSE.PAN;
+    cameraControls.touches.ONE = THREE.TOUCH.PAN;
+    cameraControls.touches.TWO = THREE.TOUCH.DOLLY_PAN;
+  }
   cameraControls.target.copy(target);
   cameraControls.update();
   // cameraControls.enableDamping = true;
@@ -1319,10 +1336,24 @@ function turnOffHighlight() {
 
 function getCameraPositionForFitInView(bounding_box, new_position) {
   const center = bounding_box.getCenter(new THREE.Vector3());
-  const direction =
-    viewSettings.view_angle === '3D'
-      ? new THREE.Vector3(0.4, -0.7, 0.8).normalize()
-      : new THREE.Vector3(0, 0, 1);
+  // Both modes start in the original Top orientation (+Y up, looking down Z).
+  const direction = new THREE.Vector3(0, 0, 1);
+  if (camera.isOrthographicCamera) {
+    const size = bounding_box.getSize(new THREE.Vector3());
+    const aspect = getRenderWidth() / window.innerHeight;
+    const halfHeight = Math.max(1, size.y, size.x / aspect) * 0.575;
+    Object.assign(camera, {
+      left: -halfHeight * aspect,
+      right: halfHeight * aspect,
+      top: halfHeight,
+      bottom: -halfHeight,
+      zoom: 1,
+      far: Math.max(10000, size.z * 4 + 100),
+    });
+    new_position.set(center.x, center.y, bounding_box.max.z + Math.max(100, size.z));
+    camera.updateProjectionMatrix();
+    return;
+  }
   const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), direction).normalize();
   const up = new THREE.Vector3().crossVectors(direction, right);
   const tanY = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
@@ -1354,6 +1385,29 @@ function getRenderWidth() {
   return window.innerWidth > 650 ? window.innerWidth - 310 : window.innerWidth;
 }
 
+function updateShadows() {
+  renderer.shadowMap.enabled = viewSettings.shadows && viewSettings.view_angle === '3D';
+  for (const layer of Object.values(GDS.layers)) layer.threejs_material.needsUpdate = true;
+}
+
+function setViewMode() {
+  cameraAnimmation.animate = false;
+  const previousCamera = camera;
+  const target = cameraControls.target.clone();
+  cameraControls.dispose();
+  const aspect = getRenderWidth() / window.innerHeight;
+  camera =
+    viewSettings.view_angle === '2D'
+      ? new THREE.OrthographicCamera(-100 * aspect, 100 * aspect, 100, -100, 0.1, 10000)
+      : new THREE.PerspectiveCamera(50, aspect, 0.1, 10000);
+  camera.layers.mask = previousCamera.layers.mask;
+  camera.position.set(target.x, target.y, target.z + 100);
+  camera.lookAt(target);
+  createCameraControls(target);
+  updateShadows();
+  zoomNode(GDS.root_node);
+}
+
 function resetRenderer() {
   if (renderer != undefined) {
     document.body.removeChild(document.getElementById('MAIN_RENDERER'));
@@ -1365,7 +1419,7 @@ function resetRenderer() {
     logarithmicDepthBuffer: performanceSettings.logarithmicDepthBuffer,
   });
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
-  renderer.shadowMap.enabled = viewSettings.shadows;
+  renderer.shadowMap.enabled = viewSettings.shadows && viewSettings.view_angle === '3D';
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.id = 'MAIN_RENDERER';
   renderer.setSize(getRenderWidth(), window.innerHeight);
@@ -1383,7 +1437,11 @@ function resetRenderer() {
 
 window.onresize = function () {
   if (!camera || !renderer) return;
-  camera.aspect = getRenderWidth() / window.innerHeight;
+  const aspect = getRenderWidth() / window.innerHeight;
+  if (camera.isOrthographicCamera) {
+    camera.left = -camera.top * aspect;
+    camera.right = camera.top * aspect;
+  } else camera.aspect = aspect;
   camera.updateProjectionMatrix();
   renderer.setSize(getRenderWidth(), window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
@@ -1431,17 +1489,13 @@ function initWindowEvents() {
     if (event.target != renderer.domElement) return;
 
     if (experimental_show_section_on) {
-      let mouse = new THREE.Vector3();
-      let pos = new THREE.Vector3();
+      let mouse = new THREE.Vector2();
 
       mouse.x = (event.clientX / getRenderWidth()) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-      mouse.z = 0.5;
-
-      mouse.unproject(camera);
-      mouse.sub(camera.position).normalize();
-
-      let ray = new THREE.Ray(camera.position, mouse);
+      const sectionRaycaster = new THREE.Raycaster();
+      sectionRaycaster.setFromCamera(mouse, camera);
+      let ray = sectionRaycaster.ray;
       let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -2);
       let point = new THREE.Vector3();
       ray.intersectPlane(plane, point);
