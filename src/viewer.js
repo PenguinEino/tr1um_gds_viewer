@@ -1463,6 +1463,7 @@ function moveCameraToNode(node) {
 function createCameraControls(target) {
   cameraControls = new OrbitControls.OrbitControls(camera, renderer.domElement);
   cameraControls.enableRotate = viewSettings.view_angle === '3D';
+  cameraControls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
   if (viewSettings.view_angle === '2D') {
     cameraControls.mouseButtons.LEFT = THREE.MOUSE.PAN;
     cameraControls.touches.ONE = THREE.TOUCH.PAN;
