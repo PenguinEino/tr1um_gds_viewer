@@ -4,7 +4,7 @@ A browser-based 3D viewer for [OpenSUSI TR-1um](https://github.com/OpenSUSI/TR-1
 
 ## Open a design
 
-- Choose a whole chip from **MPW preset** and click **Load**. The 37 presets follow the chip headings in the [ISHI-KAI TR10-1 project index](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1), using each project's `src/` GDS directly from GitHub. The catalog is maintained in `src/gds_presets.js`.
+- Choose a whole chip from **MPW preset** to load it immediately. The 37 presets follow the chip headings in the [ISHI-KAI TR10-1 project index](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1), using each project's `src/` GDS directly from GitHub. The catalog is maintained in `src/gds_presets.js`.
 - Drop a `.gds` file on the import panel, or click the drop area to choose a local file. The GDS stays in your browser.
 - Paste an HTTPS URL ending in `.gds` and choose **Load URL**. GitHub `blob` URLs are converted to `raw.githubusercontent.com` URLs. The remote server must allow browser access with CORS; if it does not, download the file and upload it locally.
 - Share a direct link with `?url=<encoded GDS URL>`. Successful URL or preset loads update the address bar automatically. The viewer also retains the upstream `?pdk=` query option; TR-1um is the default.

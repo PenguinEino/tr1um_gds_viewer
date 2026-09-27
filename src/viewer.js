@@ -111,12 +111,16 @@ let labelTextures = new Map();
 for (const preset of GDS_PRESETS) {
   presetSelect.add(new Option(preset.name, preset.url));
 }
-document.getElementById('presetForm').addEventListener('submit', (event) => {
-  event.preventDefault();
+presetSelect.addEventListener('change', () => {
   if (!presetSelect.value || loadingInProgress) return;
   urlInput.value = presetSelect.value;
   loadGDS(presetSelect.value);
 });
+
+function setLoadingInProgress(value) {
+  loadingInProgress = value;
+  presetSelect.disabled = value;
+}
 
 urlForm.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -296,9 +300,9 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       loadingStatus.innerText = `Could not display GDS: ${error.message}`;
       console.error(error);
     }
-    loadingInProgress = false;
+    setLoadingInProgress(false);
   } else if (event.data.type == WORKER_MSG_TYPE.PROCESS_ERROR) {
-    loadingInProgress = false;
+    setLoadingInProgress(false);
     loadingStatus.innerText = `Processing failed: ${event.data.message}`;
   }
 });
@@ -368,7 +372,7 @@ function loadGDS(inputURL) {
     loadingStatus.innerText = error.message;
     return;
   }
-  loadingInProgress = true;
+  setLoadingInProgress(true);
   pendingSourceUrl = inputURL.trim();
   loadingStatus.innerText = `Downloading ${fileURL}`;
 
@@ -384,7 +388,7 @@ function loadGDS(inputURL) {
       initLayerVisibility();
     })
     .catch((err) => {
-      loadingInProgress = false;
+      setLoadingInProgress(false);
       loadingStatus.innerText = `Could not fetch GDS: ${err.message}. Check the URL and CORS access, or upload the file.`;
       console.error('GDS fetch failed:', err);
     });
@@ -398,7 +402,7 @@ function loadLocalGDS(file) {
     loadingStatus.innerText = 'Wait for the current file to finish loading';
     return;
   }
-  loadingInProgress = true;
+  setLoadingInProgress(true);
   pendingSourceUrl = null;
   const reader = new FileReader();
   loadingStatus.innerText = 'Processing file';
@@ -409,13 +413,13 @@ function loadLocalGDS(file) {
       processGDS('local.' + file_extension.toLowerCase(), new Uint8Array(arrayBuffer));
       initLayerVisibility();
     } catch (error) {
-      loadingInProgress = false;
+      setLoadingInProgress(false);
       loadingStatus.innerText = 'Error processing file';
       console.error('Error processing file', error);
     }
   };
   reader.onerror = function (event) {
-    loadingInProgress = false;
+    setLoadingInProgress(false);
     loadingStatus.innerText = 'Error processing file';
   };
   reader.readAsArrayBuffer(file);
