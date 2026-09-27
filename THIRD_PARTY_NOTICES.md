@@ -93,8 +93,12 @@ for an exact reproduction. The Apache-2.0 TR-1um attribution above is retained.
   https://ishi-kai.org/assets/images/ishikai_icon.png
   The logo belongs to its respective owner and is not covered by this
   repository's Apache-2.0 license. It identifies the link to ISHI-KAI.
+- **OpenSUSI logo** is displayed from the user-specified Wix-hosted image:
+  https://static.wixstatic.com/media/ddfa79_802e51c57efe47e79cb0cc1e949ab23a~mv2.png/v1/fill/w_1200,h_630,al_c/ddfa79_802e51c57efe47e79cb0cc1e949ab23a~mv2.png
+  The logo belongs to its respective owner and is not covered by this
+  repository's Apache-2.0 license. It identifies the link to OpenSUSI.
 - These links and logos identify their destinations; they do not imply
-  endorsement by GitHub, X, Discord, ISHI-KAI or Tiny Tapeout.
+  endorsement by GitHub, X, Discord, ISHI-KAI, OpenSUSI or Tiny Tapeout.
 - Remote presets and uploaded GDS files retain their own authorship and licenses.
   The viewer's license does not grant rights to those designs. The bundled
   public/tinytapeout.gds sample is retained from the upstream viewer.
