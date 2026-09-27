@@ -1,5 +1,20 @@
 // UI translations only; GDS cell names, layer codes and project names stay intact.
 const messages = {
+  Presets: ['プリセット', 'Presets', '预设'],
+  'Open file': ['ファイルを開く', 'Open file', '打开文件'],
+  'Open URL': ['URLから開く', 'Open URL', '打开网址'],
+  Open: ['開く', 'Open', '打开'],
+  Loading: ['読み込み中…', 'Loading…', '正在加载…'],
+  Repository: ['リポジトリ ↗', 'Repository ↗', '代码仓库 ↗'],
+  'Project index': ['プロジェクト一覧 ↗', 'Project index ↗', '项目列表 ↗'],
+  'Search presets': [
+    'チップ・回路・名前で検索',
+    'Search chips, designs, people',
+    '搜索芯片、电路、参与者',
+  ],
+  'No presets found': ['一致するプリセットがありません', 'No matching presets', '没有匹配的预设'],
+  'Preview unavailable': ['プレビューを取得できません', 'Preview unavailable', '无法加载预览'],
+  'Toggle presets': ['プリセット一覧の表示切替', 'Toggle preset browser', '显示或隐藏预设列表'],
   'Community links': ['関連リンク', 'Community links', '相关链接'],
   'Source repository': ['GitHub · ソースコード', 'GitHub · Source code', 'GitHub · 源代码'],
   Licenses: ['ライセンス', 'Licenses', '许可证'],
@@ -154,6 +169,9 @@ export function setLanguage(value) {
   document.documentElement.style.setProperty('--gui-empty-label', JSON.stringify(t('Empty')));
   for (const element of document.querySelectorAll('[data-i18n]')) {
     element.textContent = t(element.dataset.i18n);
+  }
+  for (const element of document.querySelectorAll('[data-i18n-placeholder]')) {
+    element.placeholder = t(element.dataset.i18nPlaceholder);
   }
   for (const element of document.querySelectorAll('[data-i18n-aria]')) {
     element.setAttribute('aria-label', t(element.dataset.i18nAria));

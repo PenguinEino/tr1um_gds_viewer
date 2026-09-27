@@ -7,7 +7,7 @@ import { WORKER_MSG_TYPE } from './defines.js';
 import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
-import { GDS_PRESETS } from './gds_presets.js';
+import { createPresetBrowser } from './preset_browser.js';
 import { getLayerSpacingTransform } from './layer_spacing.js';
 import { t, setText, setLanguage } from './i18n.js';
 import {
@@ -45,8 +45,7 @@ const GDS_URL = urlParams.get('url') || urlParams.get('model');
 const GDS_PROCESS = urlParams.get('process');
 const requestedPDK = urlParams.get('pdk') ?? legacyProcessToPDK[GDS_PROCESS] ?? 'TR-1um';
 const PDK = PDK_LAYERS[requestedPDK] ? requestedPDK : 'TR-1um';
-const SAMPLE_URL =
-  'https://raw.githubusercontent.com/OpenSUSI/TR-1um/main/STDLIB/LogicCells/gds/INV_X1.gds';
+
 const OUTPUT_PROCESS_TO_CONSOLE = false;
 
 if (GDS_URL && GDS_URL.endsWith('.gltf')) {
@@ -109,37 +108,43 @@ let crossSectionDiv = document.querySelector('div#crossSection');
 const dropZone = document.getElementById('dropZone');
 const urlForm = document.getElementById('urlForm');
 const urlInput = document.getElementById('urlInput');
-const presetSelect = document.getElementById('presetSelect');
 const languageSelect = document.getElementById('languageSelect');
-const importSummary = document.getElementById('importSummary');
 let loadingInProgress = false;
 let pendingSourceUrl = null;
 let loadedLayerSummary;
 let labelTextures = new Map();
 
-for (const preset of GDS_PRESETS) {
-  presetSelect.add(new Option(preset.name, preset.url));
-}
-presetSelect.addEventListener('change', () => {
-  if (!presetSelect.value || loadingInProgress) return;
-  urlInput.value = presetSelect.value;
-  loadGDS(presetSelect.value);
+const presetBrowser = createPresetBrowser((url) => {
+  if (loadingInProgress) return;
+  urlInput.value = url;
+  loadGDS(url);
 });
-
 function setLoadingInProgress(value) {
   loadingInProgress = value;
-  presetSelect.disabled = value;
+  presetBrowser.setBusy(value);
+}
+const urlToggle = document.getElementById('urlToggle');
+urlToggle.addEventListener('click', () => {
+  urlForm.hidden = !urlForm.hidden;
+  urlToggle.setAttribute('aria-expanded', String(!urlForm.hidden));
+  if (!urlForm.hidden) urlInput.focus();
+});
+const togglePresets = document.getElementById('togglePresets');
+function toggleSidebar() {
+  const collapsed = document.documentElement.classList.toggle('presets-collapsed');
+  togglePresets.setAttribute('aria-expanded', String(!collapsed));
+  window.onresize?.();
+}
+togglePresets.addEventListener('click', toggleSidebar);
+if (window.innerWidth <= 760) {
+  document.documentElement.classList.add('presets-collapsed');
+  togglePresets.setAttribute('aria-expanded', 'false');
 }
 
 urlForm.addEventListener('submit', (event) => {
   event.preventDefault();
   loadGDS(urlInput.value);
 });
-document.getElementById('sampleButton').addEventListener('click', () => {
-  urlInput.value = SAMPLE_URL;
-  loadGDS(SAMPLE_URL);
-});
-
 // Accept another file even when the import controls are collapsed.
 const loadPanel = document.getElementById('loadPanel');
 loadPanel.addEventListener('dragover', (e) => {
@@ -203,7 +208,7 @@ setLanguage('ja');
 languageSelect.addEventListener('change', () => {
   setLanguage(languageSelect.value);
   translateGui();
-  if (!GDS.root_node) instanceClassTitleDiv.textContent = t('DESIGN');
+  if (!GDS.root_node) instanceClassTitleDiv.textContent = '';
 });
 
 // Debug FPS stats
@@ -306,17 +311,15 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       else pageUrl.searchParams.delete('url');
       history.replaceState(null, '', pageUrl);
       const sourceUrl = pendingSourceUrl ? normalizeGdsUrl(pendingSourceUrl) : null;
-      presetSelect.value = GDS_PRESETS.find((preset) => preset.url === sourceUrl)?.url ?? '';
-      setText(loadingStatus, 'Loaded');
-      document.getElementById('importControls').open = false;
-      if (loadedLayerSummary) {
-        setText(importSummary, 'layerSummary', {
-          shown: loadedLayerSummary.visible.size,
-          excluded: loadedLayerSummary.excluded.length,
-        });
-      } else {
-        setText(importSummary, 'Loaded (layer count is available for GDS files)');
-      }
+      presetBrowser.setActive(sourceUrl);
+      setText(loadingStatus, 'blank');
+      urlForm.hidden = true;
+      urlToggle.setAttribute('aria-expanded', 'false');
+      if (
+        window.innerWidth <= 760 &&
+        !document.documentElement.classList.contains('presets-collapsed')
+      )
+        toggleSidebar();
     } catch (error) {
       setText(loadingStatus, 'displayError', { error: error.message });
       console.error(error);
@@ -396,7 +399,7 @@ function loadGDS(inputURL) {
   }
   setLoadingInProgress(true);
   pendingSourceUrl = inputURL.trim();
-  setText(loadingStatus, 'downloading', { url: fileURL });
+  setText(loadingStatus, 'Loading');
 
   fetchWithProgressArrayBuffer(fileURL)
     .then((buffer) => {
@@ -482,7 +485,6 @@ function resetLoadedDesign() {
   viewSettings.layers = [];
   viewSettings.layers_visibility = [];
   cameraAnimmation.initialized = false;
-  setText(importSummary, 'blank');
 }
 
 function processCells() {
@@ -542,7 +544,7 @@ async function fetchWithProgressArrayBuffer(url) {
     const contentLength = response.headers.get('content-length');
     if (!contentLength) {
       console.warn('Unable to retrieve content-length. Progress tracking will not work.');
-      setText(loadingStatus, 'Error loading file');
+      setText(loadingStatus, 'Loading');
       return response.arrayBuffer(); // Fallback to standard ArrayBuffer
     }
 
@@ -729,6 +731,7 @@ function translateGui() {
 function initGUI() {
   const gui = new GUI({ title: t('Controls') });
   guiRoot = gui;
+  if (window.innerWidth <= 1050) gui.close();
 
   let guiViewSettings = translatedFolder(gui, 'View Settings');
   guiViewSettings.open();
@@ -1485,9 +1488,19 @@ function setCameraPositionForFitInView(bounding_box, target_camera) {
   getCameraPositionForFitInView(bounding_box, target_camera.position);
 }
 
+function getSidebarWidth() {
+  return window.innerWidth > 760 &&
+    !document.documentElement.classList.contains('presets-collapsed')
+    ? document.getElementById('loadPanel').getBoundingClientRect().width
+    : 0;
+}
 function getRenderWidth() {
-  // Reserve the right-hand controls on desktop instead of fitting behind them.
-  return window.innerWidth > 650 ? window.innerWidth - 310 : window.innerWidth;
+  return Math.max(1, window.innerWidth - getSidebarWidth() - (window.innerWidth > 1050 ? 310 : 0));
+}
+function setPointerFromEvent(pointer, event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 }
 
 function updateShadows() {
@@ -1541,6 +1554,7 @@ function resetRenderer() {
 }
 
 window.onresize = function () {
+  if (window.innerWidth <= 1050) guiRoot?.close();
   if (!camera || !renderer) return;
   const aspect = getRenderWidth() / window.innerHeight;
   if (camera.isOrthographicCamera) {
@@ -1557,6 +1571,7 @@ window.onresize = function () {
 
 function initWindowEvents() {
   window.onkeyup = function (event) {
+    if (event.target.closest('input, select, textarea, button, a')) return;
     switch (event.key) {
       case '1':
         setFillerCellsVisibility(!viewSettings.filler_cells);
@@ -1596,8 +1611,7 @@ function initWindowEvents() {
     if (experimental_show_section_on) {
       let mouse = new THREE.Vector2();
 
-      mouse.x = (event.clientX / getRenderWidth()) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      setPointerFromEvent(mouse, event);
       const sectionRaycaster = new THREE.Raycaster();
       sectionRaycaster.setFromCamera(mouse, camera);
       let ray = sectionRaycaster.ray;
@@ -1643,8 +1657,7 @@ function initWindowEvents() {
 
     clearSelection();
 
-    mouse.x = (event.clientX / getRenderWidth()) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    setPointerFromEvent(mouse, event);
     raycaster.setFromCamera(mouse, camera);
 
     const intersections = raycaster.intersectObject(scene, true);

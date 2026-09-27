@@ -101,3 +101,23 @@ for an exact reproduction. The Apache-2.0 TR-1um attribution above is retained.
 
 Build-only tools (Vite, Husky, Prettier, lint-staged and their dependencies)
 are not shipped as application code; their licenses remain in npm packages.
+
+## Preset gallery
+
+Preview images are displayed from each project's `images/all_frame.png`,
+linked in the ISHI-KAI TR10-1 project index:
+https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1
+Member labels and circuit titles use the explicit project-list entries in that
+index (snapshot 2026-09-27). They are not an exhaustive contributor roster.
+Project names and credits remain in their source language.
+
+`public/previews/sanken.png` is a top-view screenshot rendered by this viewer
+from https://github.com/munetomo-maruyama/TR-1um_MPW_Sanken/blob/main/src/tr_1um_sanken.gds
+It represents the actual submitted GDS; the other previews are the published
+project images, which can differ from the viewer's drawing-layer-only display.
+Rights in each circuit and image remain with their respective authors.
+
+The Sanken repository distributes this design under Apache-2.0 with the
+OpenSUSI / ISHI-KAI / TOKAI RIKA notices reproduced above and in
+[OpenSUSI.txt](public/licenses/OpenSUSI.txt). The screenshot is a rendered
+representation, made by PenguinEino for this gallery (2026).
