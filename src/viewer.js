@@ -8,6 +8,7 @@ import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
 import { createPresetBrowser } from './preset_browser.js';
+import { GDS_PRESETS } from './gds_presets.js';
 import { resolvePresetNodes, resolveVisibleNodes, hasVisibleBounds } from './preset_focus.js';
 import { getLayerSpacingTransform } from './layer_spacing.js';
 import { t, setText, setLanguage } from './i18n.js';
@@ -42,7 +43,10 @@ function normalizeGdsUrl(value) {
 }
 
 const urlParams = new URLSearchParams(location.search);
-const GDS_URL = urlParams.get('url') || urlParams.get('model');
+const GDS_URL =
+  urlParams.get('url') ||
+  urlParams.get('model') ||
+  GDS_PRESETS.find((preset) => preset.name === 'ISHI-KAI 01').url;
 const GDS_PROCESS = urlParams.get('process');
 const requestedPDK = urlParams.get('pdk') ?? legacyProcessToPDK[GDS_PROCESS] ?? 'TR-1um';
 const PDK = PDK_LAYERS[requestedPDK] ? requestedPDK : 'TR-1um';
@@ -380,12 +384,8 @@ function init() {
 
   initProcessLayers();
 
-  if (GDS_URL) {
-    urlInput.value = GDS_URL;
-    loadGDS(GDS_URL);
-  } else {
-    setText(loadingStatus, 'blank');
-  }
+  urlInput.value = GDS_URL;
+  loadGDS(GDS_URL);
 }
 
 function initLayerVisibility() {
