@@ -11,6 +11,7 @@ import { createPresetBrowser } from './preset_browser.js';
 import { GDS_PRESETS } from './gds_presets.js';
 import { resolvePresetNodes, resolveVisibleNodes, hasVisibleBounds } from './preset_focus.js';
 import { getLayerSpacingTransform } from './layer_spacing.js';
+import { surfaceZoomSpeed } from './surface_zoom.js';
 import { t, setText, setLanguage } from './i18n.js';
 import {
   getLayerPattern,
@@ -1460,10 +1461,64 @@ function moveCameraToNode(node) {
   }
 }
 
+let wheelSurface = null;
+let lastSurfaceWheelTime = 0;
+let wheelSurfaceRoot = null;
+let wheelSurfaceLayers = null;
+let wheelSurfaceSpacing = null;
+
+function prepareWheelZoom(event) {
+  if (!camera.isPerspectiveCamera || !GDS.root_node || !cameraControls.enabled || event.buttons)
+    return;
+  cameraAnimmation.animate = false;
+  const now = performance.now();
+  // Reuse the hit during a wheel burst: raycasting every notch is expensive on
+  // a full MPW. Pan/rotation and layer changes invalidate it through controls.
+  if (
+    now - lastSurfaceWheelTime > 250 ||
+    wheelSurfaceRoot !== GDS.root_node ||
+    wheelSurfaceLayers !== camera.layers.mask ||
+    wheelSurfaceSpacing !== viewSettings.layer_spacing
+  ) {
+    camera.updateMatrixWorld();
+    scene.updateMatrixWorld(true);
+    const surfaceRay = new THREE.Raycaster();
+    surfaceRay.layers.mask = camera.layers.mask;
+    const pointer = new THREE.Vector2();
+    setPointerFromEvent(pointer, event);
+    surfaceRay.setFromCamera(pointer, camera);
+    const solids = Object.values(GDS.meshes)
+      .map((mesh) => mesh.threejs_instanced_mesh)
+      .filter((mesh) => mesh?.visible && mesh.material.opacity >= 1);
+    const hit = surfaceRay.intersectObjects(solids, false)[0];
+    wheelSurface = null;
+    if (hit) {
+      const direction = camera.getWorldDirection(new THREE.Vector3());
+      const depth = hit.point.clone().sub(camera.position).dot(direction);
+      wheelSurface = camera.position.clone().addScaledVector(direction, depth);
+    }
+    wheelSurfaceRoot = GDS.root_node;
+    wheelSurfaceLayers = camera.layers.mask;
+    wheelSurfaceSpacing = viewSettings.layer_spacing;
+  }
+  lastSurfaceWheelTime = now;
+  // Anchor the dolly on the visible surface, not the old orbit center in empty
+  // space. This stays on the viewing axis, so it does not move the image sideways.
+  if (wheelSurface) cameraControls.target.copy(wheelSurface);
+  cameraControls.zoomSpeed = surfaceZoomSpeed(camera.position.distanceTo(cameraControls.target));
+}
+
 function createCameraControls(target) {
   cameraControls = new OrbitControls.OrbitControls(camera, renderer.domElement);
   cameraControls.enableRotate = viewSettings.view_angle === '3D';
   cameraControls.mouseButtons.MIDDLE = THREE.MOUSE.PAN;
+  cameraControls.minDistance = camera.near * 2;
+  lastSurfaceWheelTime = 0;
+  cameraControls.addEventListener('start', () => {
+    // Wheel events also emit start after our capture listener. Pointer gestures
+    // invalidate the cached surface via the canvas pointerdown listener instead.
+    cameraAnimmation.animate = false;
+  });
   if (viewSettings.view_angle === '2D') {
     cameraControls.mouseButtons.LEFT = THREE.MOUSE.PAN;
     cameraControls.touches.ONE = THREE.TOUCH.PAN;
@@ -1615,6 +1670,10 @@ function resetRenderer() {
   renderer.shadowMap.enabled = viewSettings.shadows && viewSettings.view_angle === '3D';
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.id = 'MAIN_RENDERER';
+  renderer.domElement.addEventListener('wheel', prepareWheelZoom, { capture: true, passive: true });
+  renderer.domElement.addEventListener('pointerdown', () => {
+    lastSurfaceWheelTime = 0;
+  });
   renderer.setSize(getRenderWidth(), window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
