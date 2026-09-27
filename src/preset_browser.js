@@ -35,19 +35,49 @@ export function createPresetBrowser(onLoad) {
     );
     const name = document.createElement('h3');
     name.textContent = preset.name;
-    const description = document.createElement('p');
-    description.className = 'preset-description';
-    description.textContent = preset.description;
-    open.append(preview, name, description);
+    open.append(preview, name);
     open.addEventListener('click', () => onLoad(preset.url));
     card.append(open);
     const members = document.createElement('div');
     members.className = 'preset-members';
-    for (const member of preset.members) {
+    const groups = new Map();
+    for (const member of [...preset.members, ...(preset.projectCredits ?? [])]) {
+      if (!groups.has(member.design)) groups.set(member.design, []);
+      groups.get(member.design).push(member);
+    }
+    for (const [design, contributors] of groups) {
+      const group = document.createElement('div');
+      group.className = 'preset-credit-group';
+      const heading = document.createElement('div');
+      heading.className = 'preset-circuit-name';
+      if (design === 'Project author (info.yaml)') setText(heading, design);
+      else heading.textContent = design;
+      const links = document.createElement('div');
+      links.className = 'preset-credit-links';
+      for (const member of contributors) {
+        const link = document.createElement('a');
+        link.textContent = member.name;
+        link.href = member.url;
+        link.title = member.design;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        const credit = document.createElement('span');
+        credit.append(link);
+        if (member.note) {
+          const note = document.createElement('small');
+          setText(note, member.note);
+          credit.append(note);
+        }
+        links.append(credit);
+      }
+      group.append(heading, links);
+      members.append(group);
+    }
+    for (const circuit of preset.additionalCircuits ?? []) {
       const link = document.createElement('a');
-      link.textContent = member.name;
-      link.href = member.url;
-      link.title = member.design;
+      link.className = 'preset-circuit-source';
+      link.textContent = circuit.design;
+      link.href = circuit.url;
       link.target = '_blank';
       link.rel = 'noopener noreferrer';
       members.append(link);
@@ -73,7 +103,7 @@ export function createPresetBrowser(onLoad) {
       card,
       open,
       searchText:
-        `${preset.name} ${preset.description} ${preset.members.map((m) => m.name).join(' ')}`.toLocaleLowerCase(),
+        `${preset.name} ${preset.description} ${[...preset.members, ...(preset.projectCredits ?? [])].map((m) => m.name).join(' ')}`.toLocaleLowerCase(),
     };
   });
   function filter() {

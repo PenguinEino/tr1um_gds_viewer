@@ -3,7 +3,8 @@
 The viewer's own code is licensed under Apache-2.0; see [LICENSE](LICENSE)
 and [NOTICE](NOTICE). Dependencies retain the licenses below. Copies of these
 notices, full license texts and the CDT source archive are shipped with the
-static website, accessible through its Licenses link.
+static website. The footer license link opens the repository LICENSE; dependency
+notices and texts remain available at `THIRD_PARTY_NOTICES.md` and `licenses/`.
 
 ## Viewer and process metadata
 
@@ -107,8 +108,10 @@ are not shipped as application code; their licenses remain in npm packages.
 Preview images are displayed from each project's `images/all_frame.png`,
 linked in the ISHI-KAI TR10-1 project index:
 https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1
-Member labels and circuit titles use the explicit project-list entries in that
-index (snapshot 2026-09-27). They are not an exhaustive contributor roster.
+Circuit credits were cross-checked against that index, all 37 MPW repositories
+and the submitted GDS hierarchies (2026-09-27). See
+[the credit audit](https://github.com/PenguinEino/tr1um_gds_viewer/blob/main/docs/preset-credits.md) for sources, source conflicts, and
+credits inferred from named GDS cells. Unpublished identities are not invented.
 Project names and credits remain in their source language.
 
 `public/previews/sanken.png` is a top-view screenshot rendered by this viewer

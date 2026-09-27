@@ -224,20 +224,31 @@
   font-size: 14px;
   margin: 13px 14px 6px;
 }
-.preset-description {
-  color: #aeb8c6;
+.preset-members {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 14px 0;
   font-size: 11px;
-  line-height: 1.65;
-  margin: 0 14px 10px;
+  line-height: 1.6;
+}
+.preset-circuit-name {
+  color: #9ca8b8;
+  margin-bottom: 4px;
   overflow-wrap: anywhere;
 }
-.preset-members {
+.preset-credit-links {
   display: flex;
   flex-wrap: wrap;
   gap: 4px 10px;
-  padding: 0 14px;
+}
+.preset-credit-links small {
+  display: block;
+  font-size: 10px;
+  color: #8e9aaa;
+}
+.preset-circuit-source {
   font-size: 11px;
-  line-height: 1.6;
 }
 .preset-members a {
   color: #c4d3e6;
