@@ -1,24 +1,31 @@
 // The layers have to be declared in z order so the "Separate Layers" feature works correctly:
 export const PDK_LAYERS = {
   'TR-1um': [
-    // Drawing layers from OpenSUSI's GDSII table. Heights are illustrative,
-    // not measured film thicknesses. Keep these in visual z order.
+    // Drawing-layer IDs follow the PDK; the 3D palette follows the upstream
+    // viewer's muted well / rose poly / gold and blue interconnect convention.
     {
       layer_number: 140,
       layer_datatype: 0,
       name: 'WN',
       zmin: -0.5,
       zmax: 0,
-      color: [0, 0.67, 0, 1],
+      color: [0.28, 0.31, 0.34, 1],
     },
-    { layer_number: 3, layer_datatype: 1, name: 'AP', zmin: -0.1, zmax: 0.03, color: [1, 0, 1, 1] },
+    {
+      layer_number: 3,
+      layer_datatype: 1,
+      name: 'AP',
+      zmin: -0.1,
+      zmax: 0.03,
+      color: [0.79, 0.71, 0.68, 1],
+    },
     {
       layer_number: 3,
       layer_datatype: 2,
       name: 'AN',
       zmin: -0.1,
       zmax: 0.03,
-      color: [0, 0.67, 0, 1],
+      color: [0.72, 0.79, 0.76, 1],
     },
     {
       layer_number: 3,
@@ -26,7 +33,7 @@ export const PDK_LAYERS = {
       name: 'AR',
       zmin: -0.1,
       zmax: 0.03,
-      color: [1, 0.68, 0, 1],
+      color: [0.75, 0.65, 0.45, 1],
     },
     {
       layer_number: 3,
@@ -34,7 +41,7 @@ export const PDK_LAYERS = {
       name: 'AC',
       zmin: -0.1,
       zmax: 0.03,
-      color: [1, 0.75, 0.95, 1],
+      color: [0.8, 0.76, 0.69, 1],
     },
     {
       layer_number: 8,
@@ -42,7 +49,7 @@ export const PDK_LAYERS = {
       name: 'GC',
       zmin: 0.03,
       zmax: 0.2,
-      color: [1, 0.49, 0.15, 1],
+      color: [0.75, 0.35, 0.46, 1],
     },
     {
       layer_number: 8,
@@ -50,7 +57,7 @@ export const PDK_LAYERS = {
       name: 'GR',
       zmin: 0.03,
       zmax: 0.2,
-      color: [0.5, 0, 0.5, 1],
+      color: [0.58, 0.38, 0.53, 1],
     },
     {
       layer_number: 11,
@@ -58,7 +65,7 @@ export const PDK_LAYERS = {
       name: 'CO',
       zmin: 0.03,
       zmax: 0.65,
-      color: [1, 1, 1, 1],
+      color: [0.32, 0.34, 0.38, 1],
     },
     {
       layer_number: 13,
@@ -66,7 +73,7 @@ export const PDK_LAYERS = {
       name: 'M1',
       zmin: 0.65,
       zmax: 1.05,
-      color: [0, 0.5, 1, 1],
+      color: [1, 0.81, 0.55, 1],
     },
     {
       layer_number: 48,
@@ -74,7 +81,7 @@ export const PDK_LAYERS = {
       name: 'TXM1',
       zmin: 1.05,
       zmax: 1.06,
-      color: [0, 0.5, 1, 1],
+      color: [1, 0.86, 0.65, 1],
     },
     {
       layer_number: 48,
@@ -82,7 +89,7 @@ export const PDK_LAYERS = {
       name: 'PIN',
       zmin: 1.06,
       zmax: 1.07,
-      color: [0.5, 0, 0, 1],
+      color: [0.65, 0.49, 0.28, 1],
     },
     {
       layer_number: 19,
@@ -90,39 +97,39 @@ export const PDK_LAYERS = {
       name: 'V1',
       zmin: 1.05,
       zmax: 1.55,
-      color: [1, 1, 1, 1],
+      color: [0.32, 0.34, 0.38, 1],
     },
     {
       layer_number: 20,
       layer_datatype: 0,
       name: 'M2',
       zmin: 1.55,
-      zmax: 2.0,
-      color: [0.75, 0.75, 0.75, 1],
+      zmax: 2,
+      color: [0.65, 0.75, 0.9, 1],
     },
     {
       layer_number: 49,
       layer_datatype: 0,
       name: 'TXM2',
-      zmin: 2.0,
+      zmin: 2,
       zmax: 2.01,
-      color: [0.75, 0.75, 0.75, 1],
+      color: [0.75, 0.83, 0.95, 1],
     },
     {
       layer_number: 14,
       layer_datatype: 0,
       name: 'PO',
-      zmin: 2.0,
+      zmin: 2,
       zmax: 2.15,
-      color: [0.55, 0.55, 0.65, 1],
+      color: [0.5, 0.58, 0.64, 1],
     },
     {
       layer_number: 121,
       layer_datatype: 0,
       name: 'TC23',
-      zmin: 2.0,
+      zmin: 2,
       zmax: 2.5,
-      color: [0.5, 0.5, 0.5, 1],
+      color: [0.32, 0.34, 0.38, 1],
     },
     {
       layer_number: 122,
@@ -130,9 +137,15 @@ export const PDK_LAYERS = {
       name: 'M3',
       zmin: 2.5,
       zmax: 2.95,
-      color: [0, 0, 1, 1],
+      color: [0.2, 0.62, 0.86, 1],
     },
-  ],
+  ].map((layer) => ({
+    ...layer,
+    // Sixfold illustrative vertical exaggeration makes contacts and sidewalls
+    // readable at TR-1um feature sizes. These are not process film thicknesses.
+    zmin: layer.zmin * 6,
+    zmax: layer.zmax * 6,
+  })),
   sky130A: [
     {
       layer_number: 235,

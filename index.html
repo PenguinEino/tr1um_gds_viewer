@@ -7,6 +7,8 @@
     <style>
       body {
         margin: 0;
+        background: #202020;
+        overflow: hidden;
         font-family: 'Roboto', sans-serif;
         font-size: 12px;
       }
@@ -33,8 +35,7 @@
         position: absolute;
         z-index: 3;
         top: 12px;
-        left: 50%;
-        transform: translateX(-50%);
+        left: 12px;
         box-sizing: border-box;
         width: min(440px, calc(100vw - 330px));
         min-width: 250px;
@@ -44,7 +45,8 @@
         border-radius: 8px;
         color: white;
       }
-      #loadPanel h1 {
+      #loadPanel summary {
+        cursor: pointer;
         font-size: 17px;
         margin: 0 0 8px;
       }
@@ -59,7 +61,7 @@
         text-align: center;
         cursor: pointer;
       }
-      #dropZone.dragover {
+      #loadPanel.dragover {
         border-color: #fff;
         background: #31415d;
       }
@@ -89,7 +91,7 @@
         #loadPanel {
           left: 8px;
           transform: none;
-          top: 105px;
+          top: 12px;
           width: calc(100vw - 345px);
         }
       }
@@ -119,6 +121,10 @@
         /* --name-width: 65%; */
       }
 
+      .selection_link {
+        pointer-events: auto;
+      }
+
       .selection_link a {
         color: white;
         cursor: pointer;
@@ -129,25 +135,27 @@
   <body>
     <div id="crossSection"></div>
     <section id="loadPanel" aria-label="GDS input">
-      <h1>TR-1um GDS Viewer</h1>
-      <div id="dropZone" role="button" tabindex="0">Drop a GDS file here or click to select</div>
-      <form id="urlForm">
-        <input
-          id="urlInput"
-          type="url"
-          placeholder="https://…/design.gds"
-          aria-label="GDS file URL"
-          required
-        />
-        <button type="submit">Load URL</button>
-      </form>
-      <button id="sampleButton" type="button">Load OpenSUSI sample</button>
+      <details id="importControls" open>
+        <summary>TR-1um GDS Viewer · Open GDS</summary>
+        <div id="dropZone" role="button" tabindex="0">Drop a GDS file here or click to select</div>
+        <form id="urlForm">
+          <input
+            id="urlInput"
+            type="url"
+            placeholder="https://…/design.gds"
+            aria-label="GDS file URL"
+            required
+          />
+          <button type="submit">Load URL</button>
+        </form>
+        <button id="sampleButton" type="button">Load OpenSUSI sample</button>
+      </details>
       <p id="loadingStatus" role="status"></p>
       <p id="importSummary"></p>
       <p>Drawing layers only · illustrative 3D heights</p>
     </section>
 
-    <div style="position: absolute; color: white; left: 5px; top: 5px">
+    <div style="position: absolute; color: white; left: 5px; bottom: 5px; pointer-events: none">
       <div id="instanceClassTitle" class="textShadow">DESIGN</div>
       <div id="information" class="textShadow"></div>
       <div class="textShadow">

@@ -10,6 +10,10 @@ A browser-based 3D viewer for [OpenSUSI TR-1um](https://github.com/OpenSUSI/TR-1
 
 The viewer shows only layer types present in the loaded GDS that are in the TR-1um drawing-layer set below. It reports the number of other layer types omitted. You can load another file in the same tab after the current one finishes.
 
+## 3D appearance
+
+TR-1um uses a muted 3D palette inspired by the upstream viewer: neutral wells and active regions, rose gates, gold M1, blue-gray M2, cyan M3, and dark contacts. Colors intentionally differ from the KLayout 2D palette. Heights are exaggerated sixfold for readable sidewalls and contact pillars, not physical measurements. The initial view is oblique; **View angle** switches between **3D** and **Top**. **Cast shadows** can be disabled on slower devices. Layer filtering is unchanged.
+
 ## TR-1um layer set
 
 `WN 140/0`, `AP 3/1`, `AN 3/2`, `AR 3/3`, `AC 3/4`, `GC 8/1`, `GR 8/2`, `CO 11/0`, `M1 13/0`, `V1 19/0`, `M2 20/0`, and `PO 14/0`. The current MDP script also accepts `TC23 121/0` and `M3 122/0`, which appear when present. Text and pin layers `TXM1 48/0`, `PIN 48/1`, and `TXM2 49/0` are also shown.

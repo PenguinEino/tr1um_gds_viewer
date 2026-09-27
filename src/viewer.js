@@ -107,20 +107,21 @@ document.getElementById('sampleButton').addEventListener('click', () => {
   loadGDS(SAMPLE_URL);
 });
 
-// Handle drag and drop
-dropZone.addEventListener('dragover', (e) => {
+// Accept another file even when the import controls are collapsed.
+const loadPanel = document.getElementById('loadPanel');
+loadPanel.addEventListener('dragover', (e) => {
   e.preventDefault();
-  dropZone.classList.add('dragover');
+  loadPanel.classList.add('dragover');
 });
 
-dropZone.addEventListener('dragleave', (e) => {
+loadPanel.addEventListener('dragleave', (e) => {
   e.preventDefault();
-  dropZone.classList.remove('dragover');
+  loadPanel.classList.remove('dragover');
 });
 
-dropZone.addEventListener('drop', (e) => {
+loadPanel.addEventListener('drop', (e) => {
   e.preventDefault();
-  dropZone.classList.remove('dragover');
+  loadPanel.classList.remove('dragover');
 
   const file = e.dataTransfer.files[0];
   if (
@@ -162,6 +163,7 @@ let guiLayersFolder,
   guiZoomSelectionButton;
 
 let viewSettings, performanceSettings, experimentalSettings;
+let keyLight;
 
 // Debug FPS stats
 let show_fps_stats = false;
@@ -203,7 +205,9 @@ gdsProcessorWorker.addEventListener('message', function (event) {
     geometry.setIndex(new THREE.BufferAttribute(indices, 1));
     geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
 
-    // ToDo: Check this function. I think is supposed to be defined by us
+    // Flat face shading uses derivatives, but shadow coordinates also need
+    // valid vertex normals for the world-space normal bias.
+    geometry.computeVertexNormals();
     geometry.computeBoundingBox();
 
     const layer_id = GDS.makeLayerId(event.data.layer_number, event.data.layer_datatype);
@@ -255,6 +259,7 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       updateGuiAfterLoad();
       initWindowEvents();
       loadingStatus.innerText = 'Loaded';
+      document.getElementById('importControls').open = false;
       if (loadedLayerSummary) {
         importSummary.innerText = `${loadedLayerSummary.visible.size} drawing/label layers shown · ${loadedLayerSummary.excluded.length} other layer types excluded`;
       } else {
@@ -288,6 +293,8 @@ function init() {
   };
 
   viewSettings = {
+    view_angle: PDK === 'TR-1um' ? '3D' : 'Top',
+    shadows: PDK === 'TR-1um',
     filler_cells: true,
     top_cell_geometry: true,
     layers: [],
@@ -508,7 +515,7 @@ function init3D() {
   mouse = new THREE.Vector2();
   mouse_moved = false;
 
-  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 10000);
+  camera = new THREE.PerspectiveCamera(50, getRenderWidth() / window.innerHeight, 0.1, 10000);
 
   resetRenderer();
 
@@ -542,30 +549,26 @@ function init3D() {
 
   scene.background = new THREE.Color(0x202020);
 
-  // const ambient_light = new THREE.AmbientLight(0xffffff); // soft white light
-  // ambient_light.intensity = 2.6;
-  // scene.add(ambient_light);
+  // Keep the upstream face shading for its existing PDKs. TR-1um adds an
+  // oblique key light and cast shadows so broad surfaces reveal the stack.
+  keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
+  keyLight.position.set(0, 0, 50);
+  keyLight.castShadow = PDK === 'TR-1um';
+  keyLight.shadow.mapSize.set(2048, 2048);
+  keyLight.shadow.bias = -0.0001;
+  keyLight.shadow.normalBias = 0.06;
+  scene.add(keyLight, keyLight.target);
+  if (PDK === 'TR-1um') scene.add(new THREE.AmbientLight(0xffffff, 0.45));
 
-  let dirLight;
-
-  dirLight = new THREE.DirectionalLight(0xffffff, 4 * 0.8);
-  dirLight.position.set(0, 0, 50);
-  scene.add(dirLight);
-
-  // let lightHelper = new THREE.DirectionalLightHelper(dirLight);
-  // scene.add(lightHelper);
-
-  dirLight = new THREE.DirectionalLight(0xffffff, 2 * 0.8);
-  dirLight.position.set(-50, 0, 0);
-  scene.add(dirLight);
-
-  dirLight = new THREE.DirectionalLight(0xffffff, 3 * 0.8);
-  dirLight.position.set(0, 50, 0);
-  scene.add(dirLight);
-
-  dirLight = new THREE.DirectionalLight(0xffffff, 2 * 0.8);
-  dirLight.position.set(0, -50, 0);
-  scene.add(dirLight);
+  for (const [x, y, intensity] of [
+    [-50, 0, 1.6],
+    [0, 50, 2.4],
+    [0, -50, 1.6],
+  ]) {
+    const light = new THREE.DirectionalLight(0xffffff, intensity);
+    light.position.set(x, y, 0);
+    scene.add(light);
+  }
 
   section_renderer_box = new THREE.Box3();
   section_renderer_box.setFromCenterAndSize(
@@ -595,9 +598,21 @@ function initGUI() {
   guiPerformanceSettings.close();
 
   let guiExperimentalSettings = gui.addFolder('Experimental');
-  guiExperimentalSettings.open();
+  guiExperimentalSettings.close();
 
   // View Settings
+  guiViewSettings
+    .add(viewSettings, 'view_angle', ['3D', 'Top'])
+    .name('View angle')
+    .onChange(() => zoomNode(GDS.root_node));
+  if (PDK === 'TR-1um') {
+    guiViewSettings
+      .add(viewSettings, 'shadows')
+      .name('Cast shadows')
+      .onChange((enabled) => {
+        renderer.shadowMap.enabled = enabled;
+      });
+  }
   viewSettings['isoleate_selection_or_back'] = function () {
     isolateSelectionOrGoBack();
   };
@@ -846,6 +861,9 @@ function animate() {
   } else {
     scene.background = new THREE.Color(0);
   }
+
+  // Hidden layers must not cast invisible shadows.
+  keyLight.shadow.camera.layers.mask = camera.layers.mask;
 
   // Main render
   renderer.render(scene, camera);
@@ -1120,7 +1138,7 @@ function setCameraInitialPosition(node) {
     getCameraPositionForFitInView(bbox, positionTarget);
     positionTarget.z = positionTarget.z * 5;
     camera.position.copy(positionTarget);
-    camera.lookAt(center.x, center.y, 0);
+    camera.lookAt(center);
     camera.up.x = 0;
     camera.up.y = 1;
     camera.up.z = 0;
@@ -1142,7 +1160,7 @@ function zoomNode(node) {
     cameraAnimmation.upTarget.z = 0;
     cameraAnimmation.lookAtTarget.x = center.x;
     cameraAnimmation.lookAtTarget.y = center.y;
-    cameraAnimmation.lookAtTarget.z = 0;
+    cameraAnimmation.lookAtTarget.z = center.z;
     cameraAnimmation.animate = true;
 
     // camera.up.x = 0;
@@ -1222,27 +1240,40 @@ function turnOffHighlight() {
 }
 
 function getCameraPositionForFitInView(bounding_box, new_position) {
-  const extra = 1.1;
-  let size = new THREE.Vector3();
-  bounding_box.getSize(size);
-
-  let center = new THREE.Vector3();
-  bounding_box.getCenter(center);
-
-  let fov_radians = (camera.fov / 180) * Math.PI;
-
-  let camera_z = Math.max(
-    (size.y * extra) / 2 / Math.tan(fov_radians / 2),
-    (size.x * extra) / 2 / camera.aspect / Math.tan(fov_radians / 2),
-  );
-
-  // The distance is calculated to the rectangle (x,z) closest to the camera
-  camera_z = camera_z + bounding_box.max.z;
-
-  new_position.set(center.x, center.y, camera_z);
+  const center = bounding_box.getCenter(new THREE.Vector3());
+  const direction =
+    viewSettings.view_angle === '3D'
+      ? new THREE.Vector3(0.4, -0.7, 0.8).normalize()
+      : new THREE.Vector3(0, 0, 1);
+  const right = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), direction).normalize();
+  const up = new THREE.Vector3().crossVectors(direction, right);
+  const tanY = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+  const tanX = tanY * camera.aspect;
+  let distance = 1;
+  // Fit every corner in the chosen camera basis, including the stack height.
+  for (const x of [bounding_box.min.x, bounding_box.max.x]) {
+    for (const y of [bounding_box.min.y, bounding_box.max.y]) {
+      for (const z of [bounding_box.min.z, bounding_box.max.z]) {
+        const corner = new THREE.Vector3(x, y, z).sub(center);
+        distance = Math.max(
+          distance,
+          corner.dot(direction) +
+            Math.max(Math.abs(corner.dot(right)) / tanX, Math.abs(corner.dot(up)) / tanY),
+        );
+      }
+    }
+  }
+  new_position.copy(center).addScaledVector(direction, distance * 1.15);
+  camera.far = Math.max(10000, distance * 4);
+  camera.updateProjectionMatrix();
 }
 function setCameraPositionForFitInView(bounding_box, target_camera) {
   getCameraPositionForFitInView(bounding_box, target_camera.position);
+}
+
+function getRenderWidth() {
+  // Reserve the right-hand controls on desktop instead of fitting behind them.
+  return window.innerWidth > 650 ? window.innerWidth - 310 : window.innerWidth;
 }
 
 function resetRenderer() {
@@ -1256,8 +1287,10 @@ function resetRenderer() {
     logarithmicDepthBuffer: performanceSettings.logarithmicDepthBuffer,
   });
   renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+  renderer.shadowMap.enabled = viewSettings.shadows;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.id = 'MAIN_RENDERER';
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(getRenderWidth(), window.innerHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
 
   document.body.appendChild(renderer.domElement);
@@ -1272,9 +1305,9 @@ function resetRenderer() {
 
 window.onresize = function () {
   if (!camera || !renderer) return;
-  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.aspect = getRenderWidth() / window.innerHeight;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(getRenderWidth(), window.innerHeight);
 };
 
 function initWindowEvents() {
@@ -1319,7 +1352,7 @@ function initWindowEvents() {
       let mouse = new THREE.Vector3();
       let pos = new THREE.Vector3();
 
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.x = (event.clientX / getRenderWidth()) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
       mouse.z = 0.5;
 
@@ -1369,7 +1402,7 @@ function initWindowEvents() {
 
     clearSelection();
 
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.x = (event.clientX / getRenderWidth()) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
 
@@ -1534,6 +1567,9 @@ function buildMeshesScene(top_node, main_matrix) {
     );
 
     instanced_mesh.name = reference_mesh.name;
+    const layer = GDS.layers[GDS.makeLayerId(mesh.layer_number, mesh.layer_datatype)];
+    instanced_mesh.castShadow = !['WN', 'PIN', 'TXM1', 'TXM2'].includes(layer.name);
+    instanced_mesh.receiveShadow = true;
 
     let color = new THREE.Color(1, 1, 1);
     for (let j = 0; j < mesh.instances.length; j++) {
@@ -1572,6 +1608,10 @@ function getLabelTexture(text, color) {
   ctx.fillStyle = `#${color}`;
   ctx.font = 'bold 52px sans-serif';
   ctx.textBaseline = 'middle';
+  ctx.strokeStyle = '#20242a';
+  ctx.lineWidth = 5;
+  ctx.lineJoin = 'round';
+  ctx.strokeText(text, 8, 40);
   ctx.fillText(text, 8, 40);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -1586,7 +1626,10 @@ function buildLabelsScene() {
       const layerId = GDS.makeLayerId(label.layer_number, label.layer_datatype);
       const layer = GDS.layers[layerId];
       if (!layer) continue;
-      const color = layer.threejs_material.color.getHexString(THREE.LinearSRGBColorSpace);
+      const color =
+        PDK === 'TR-1um'
+          ? 'f2ece1'
+          : layer.threejs_material.color.getHexString(THREE.LinearSRGBColorSpace);
       const material = new THREE.SpriteMaterial({
         map: getLabelTexture(label.text, color),
         transparent: true,
@@ -1622,6 +1665,24 @@ function buildScene(node, reset_camera = true) {
 
   buildMeshesScene(GDS.root_node, main_matrix);
   buildLabelsScene();
+  if (PDK === 'TR-1um') {
+    const bounds = GDS.root_node.scene_bounding_box;
+    const center = bounds.getCenter(new THREE.Vector3());
+    const radius = Math.max(1, bounds.getSize(new THREE.Vector3()).length() / 2);
+    keyLight.target.position.copy(center);
+    keyLight.position
+      .copy(center)
+      .add(new THREE.Vector3(-0.35, -0.5, 1).multiplyScalar(radius * 2));
+    Object.assign(keyLight.shadow.camera, {
+      left: -radius,
+      right: radius,
+      top: radius,
+      bottom: -radius,
+      near: 0.1,
+      far: radius * 5,
+    });
+    keyLight.shadow.camera.updateProjectionMatrix();
+  }
 
   // // Test for checking nodes bounding boxes
   // // Those bounding boxes could then be used to filter objects for raycasting

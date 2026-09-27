@@ -41,7 +41,8 @@ let GDS = {
     material.side = THREE.DoubleSide; //THREE.FrontSide;
     material.flatShading = true;
     material.roughness = 0.9;
-    material.metallness = 0.1;
+    material.metalness = 0.0;
+    material.shadowSide = THREE.FrontSide;
     material.name = name;
 
     const layer = {
