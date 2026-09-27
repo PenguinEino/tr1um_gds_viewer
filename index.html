@@ -1,119 +1,161 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-
-<head>
-    <meta charset="utf-8">
-    <title>Tiny Tapeout GDS Viewer</title>
-    <link href='https://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+  <head>
+    <meta charset="utf-8" />
+    <title>TR-1um GDS Viewer</title>
+    <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" type="text/css" />
     <style>
-        body {
-            margin: 0;
-            font-family: 'Roboto', sans-serif;
-            font-size: 12px;
-        }
+      body {
+        margin: 0;
+        font-family: 'Roboto', sans-serif;
+        font-size: 12px;
+      }
 
-        .textShadow {
-            text-shadow:
-            -1px -1px 0 #202020,
-             0   -1px 0 #202020,
-             1px -1px 0 #202020,
-             1px  0   0 #202020,
-             1px  1px 0 #202020,
-             0    1px 0 #202020,
-            -1px  1px 0 #202020,
-            -1px  0   0 #202020;
-        }
-        
-        #loadingStatus {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            font-size: medium;
-            color: white;
-            font-weight: bold;
-        }
+      .textShadow {
+        text-shadow:
+          -1px -1px 0 #202020,
+          0 -1px 0 #202020,
+          1px -1px 0 #202020,
+          1px 0 0 #202020,
+          1px 1px 0 #202020,
+          0 1px 0 #202020,
+          -1px 1px 0 #202020,
+          -1px 0 0 #202020;
+      }
 
-        #dropZone {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 300px;
-            height: 200px;
-            border: 2px dashed #666;
-            border-radius: 8px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        #dropZone.hidden {
-            display: none;
-        }
-        #dropZone.dragover {
-            border-color: #fff;
-            background: rgba(0, 0, 0, 0.7);
-        }
+      #loadingStatus {
+        color: #dce8ff;
+        min-height: 1.4em;
+        overflow-wrap: anywhere;
+      }
 
-        #crossSection {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            margin-left: 10px;
-            margin-bottom: 10px;
+      #loadPanel {
+        position: absolute;
+        z-index: 3;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        box-sizing: border-box;
+        width: min(440px, calc(100vw - 330px));
+        min-width: 250px;
+        padding: 12px;
+        background: rgba(12, 17, 28, 0.92);
+        border: 1px solid #60708d;
+        border-radius: 8px;
+        color: white;
+      }
+      #loadPanel h1 {
+        font-size: 17px;
+        margin: 0 0 8px;
+      }
+      #loadPanel p {
+        margin: 5px 0;
+        color: #c5d0df;
+      }
+      #dropZone {
+        border: 2px dashed #8193af;
+        border-radius: 6px;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+      }
+      #dropZone.dragover {
+        border-color: #fff;
+        background: #31415d;
+      }
+      #urlForm {
+        display: flex;
+        gap: 6px;
+        margin: 8px 0;
+      }
+      #urlInput {
+        flex: 1;
+        min-width: 0;
+        padding: 7px;
+      }
+      #loadPanel button {
+        cursor: pointer;
+      }
+      #sampleButton {
+        background: none;
+        border: 0;
+        color: #a7d1ff;
+        padding: 0;
+      }
+      #importSummary {
+        color: #dce8ff;
+      }
+      @media (max-width: 850px) {
+        #loadPanel {
+          left: 8px;
+          transform: none;
+          top: 105px;
+          width: calc(100vw - 345px);
         }
+      }
 
-        #instanceClassTitle {
-            font-size: large;
-        }
+      #crossSection {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        margin-left: 10px;
+        margin-bottom: 10px;
+      }
 
-        #information {
-            font-size: small;
-        }
+      #instanceClassTitle {
+        font-size: large;
+      }
 
-        .lil-gui { 
-            /* --folder-ident: 4; */
-            --background-color: #181818;
-            /* --widget-color: rgb(0, 89, 134); */
-            /* --padding: 2px; */
-        	--width: 300px;
-	        /* --name-width: 65%; */
-        }
+      #information {
+        font-size: small;
+      }
 
-        .selection_link a {
-            color: white;
-            cursor: pointer;
-        }
+      .lil-gui {
+        /* --folder-ident: 4; */
+        --background-color: #181818;
+        /* --widget-color: rgb(0, 89, 134); */
+        /* --padding: 2px; */
+        --width: 300px;
+        /* --name-width: 65%; */
+      }
+
+      .selection_link a {
+        color: white;
+        cursor: pointer;
+      }
     </style>
-</head>
+  </head>
 
-<body>
-
+  <body>
     <div id="crossSection"></div>
-    <div id="loadingStatus">LOADING...</div>
+    <section id="loadPanel" aria-label="GDS input">
+      <h1>TR-1um GDS Viewer</h1>
+      <div id="dropZone" role="button" tabindex="0">Drop a GDS file here or click to select</div>
+      <form id="urlForm">
+        <input
+          id="urlInput"
+          type="url"
+          placeholder="https://…/design.gds"
+          aria-label="GDS file URL"
+          required
+        />
+        <button type="submit">Load URL</button>
+      </form>
+      <button id="sampleButton" type="button">Load OpenSUSI sample</button>
+      <p id="loadingStatus" role="status"></p>
+      <p id="importSummary"></p>
+      <p>Drawing layers only · illustrative 3D heights</p>
+    </section>
 
-    <div style="position: absolute; color:white; left: 5px; top: 5px;">
-        <div id="instanceClassTitle" class="textShadow">DESIGN</div>
-        <div id="information" class="textShadow"></div>
-        <div class="textShadow"><br>KEYS
-            <br>1: Hide Fill, Decap, Tap cells
-            <br>2: Hide top cell geometry
-            <br>3: Isolate selection / back
-            <br>4: Zoom to selection
-        </div>
-        
-    </div>
-
-    <div id="dropZone" class="hidden">
-        <div style="font-size: 18px; margin-bottom: 10px;">Drop GDS file here</div>
-        <div style="font-size: 14px; opacity: 0.8;">or click to select</div>
+    <div style="position: absolute; color: white; left: 5px; top: 5px">
+      <div id="instanceClassTitle" class="textShadow">DESIGN</div>
+      <div id="information" class="textShadow"></div>
+      <div class="textShadow">
+        <br />KEYS <br />1: Hide Fill, Decap, Tap cells <br />2: Hide top cell geometry <br />3:
+        Isolate selection / back <br />4: Zoom to selection
+      </div>
     </div>
 
     <script type="module" src="src/viewer.js"></script>
-</body>
-
+  </body>
 </html>

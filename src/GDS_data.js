@@ -75,6 +75,7 @@ let GDS = {
     ref_rotation,
     ref_x_reflection,
   ) {
+    if (!this.cells[parent_cell_name] || !this.cells[cell_name]) return;
     const matrix = new THREE.Matrix4();
     const translation = new THREE.Vector3(ref_origin_x, ref_origin_y, 0);
     const rotation = new THREE.Quaternion(
@@ -96,6 +97,10 @@ let GDS = {
   },
 
   addMesh: function (cell_name, mesh_name, layer_number, layer_datatype, threejs_mesh) {
+    if (!this.cells[cell_name]) {
+      threejs_mesh.geometry.dispose();
+      return;
+    }
     this.meshes[mesh_name] = {
       layer_number: layer_number,
       layer_datatype: layer_datatype,
@@ -105,6 +110,11 @@ let GDS = {
       instances: [],
     };
     this.cells[cell_name].meshes_names.push(mesh_name);
+  },
+
+  addLabel: function (cell_name, layer_number, layer_datatype, text, x, y, z) {
+    if (!this.cells[cell_name]) return;
+    this.cells[cell_name].labels.push({ layer_number, layer_datatype, text, x, y, z });
   },
 
   addNode: function (cell_name, instance_name, matrix, parent) {
@@ -120,5 +130,13 @@ let GDS = {
 
     this.nodes.push(node);
     return node;
+  },
+
+  primaryTopCell: function () {
+    return this.top_cells.reduce((best, name) => {
+      const area = (bounds) =>
+        Math.max(0, bounds.max_x - bounds.min_x) * Math.max(0, bounds.max_y - bounds.min_y);
+      return !best || area(this.cells[name].bounds) > area(this.cells[best].bounds) ? name : best;
+    }, null);
   },
 };

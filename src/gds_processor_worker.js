@@ -2,27 +2,37 @@ import { WORKER_MSG_TYPE } from './defines.js';
 import gdsProcessorInit from './gds_processor.js';
 
 let ModuleInstance;
+let uploadedFile;
 
 async function initialize() {
   ModuleInstance = await gdsProcessorInit(); // Emscripten initializes the WASM
+  ModuleInstance.FS.mkdir('/uploaded');
   self.postMessage({ type: WORKER_MSG_TYPE.WORKER_READY });
   // console.log("wasm module initialized");
 
   // Handle messages from the main thread
   self.onmessage = (event) => {
     if (event.data.type == WORKER_MSG_TYPE.PROCESS_GDS) {
-      ModuleInstance.FS.mkdir('/uploaded');
-
-      ModuleInstance.FS.writeFile(event.data.filename, event.data.data);
-      ModuleInstance.ccall(
-        'processGDS',
-        null,
-        ['string', 'number'],
-        [event.data.filename, event.data.opt_just_lines ? 1 : 0],
-      );
+      try {
+        if (uploadedFile) ModuleInstance.FS.unlink(uploadedFile);
+        uploadedFile = event.data.filename;
+        ModuleInstance.FS.writeFile(uploadedFile, event.data.data);
+        ModuleInstance.ccall(
+          'processGDS',
+          null,
+          ['string', 'number'],
+          [uploadedFile, event.data.opt_just_lines ? 1 : 0],
+        );
+      } catch (error) {
+        self.postMessage({ type: WORKER_MSG_TYPE.PROCESS_ERROR, message: String(error) });
+      }
     } else if (event.data.type == WORKER_MSG_TYPE.PROCESS_CELLS) {
-      ModuleInstance.ccall('processCells', null, ['number'], [event.data.opt_just_lines ? 1 : 0]);
-      self.postMessage({ type: WORKER_MSG_TYPE.PROCESS_ENDED });
+      try {
+        ModuleInstance.ccall('processCells', null, ['number'], [event.data.opt_just_lines ? 1 : 0]);
+        self.postMessage({ type: WORKER_MSG_TYPE.PROCESS_ENDED });
+      } catch (error) {
+        self.postMessage({ type: WORKER_MSG_TYPE.PROCESS_ERROR, message: String(error) });
+      }
     } else if (event.data.type == WORKER_MSG_TYPE.ADD_PROCESS_LAYER) {
       ModuleInstance.ccall(
         'addProcessLayer',

@@ -8,7 +8,7 @@ set(CMAKE_EXECUTABLE_SUFFIX ".js")
 add_executable(gds_processor ${SOURCE_FILES} gds_processor.cpp)
 
 include_directories(gds_processor "../external/qhull/src" "../external/gdstk/include" "../external/CDT/CDT/include") 
-target_link_libraries(gds_processor qhull_r gdstk CDT)
+target_link_libraries(gds_processor qhullstatic_r gdstk CDT)
 
 # set(LINK_DEBUG_OPTIONS " -g -s STACK_OVERFLOW_CHECK=1 ")
 # set(LINK_DEBUG_OPTIONS " -s ASSERTIONS=1 -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=1 ")
@@ -28,4 +28,3 @@ set_target_properties(gds_processor PROPERTIES
     -s EXPORTED_FUNCTIONS='[\"_addProcessLayer\", \"_processGDS\", \"_processCells\", \"_malloc\", \"_free\"]' \
     -s EXPORTED_RUNTIME_METHODS='[\"ccall\",\"FS\"]' "
 )
-

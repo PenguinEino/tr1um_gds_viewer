@@ -5,22 +5,32 @@ import Stats from 'three/examples/jsm/libs/stats.module.js';
 import { WORKER_MSG_TYPE } from './defines.js';
 import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
+import { summarizeGdsLayers } from './gds_layers.js';
 
-// We can't load HTTP resources anyway, so let's just assume HTTPS
-function toHttps(url) {
-  if (typeof url != 'string' || url == 'tinytapeout.gds') {
-    return url;
+function normalizeGdsUrl(value) {
+  const url = new URL(value);
+  if (url.hostname === 'github.com') {
+    const parts = url.pathname.split('/').filter(Boolean);
+    if (parts.length >= 5 && parts[2] === 'blob') {
+      url.hostname = 'raw.githubusercontent.com';
+      url.pathname = `/${parts[0]}/${parts[1]}/${parts.slice(3).join('/')}`;
+    }
   }
-  if (['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname)) {
-    return url;
+  if (url.protocol === 'http:' && !['localhost', '127.0.0.1', '::1'].includes(url.hostname)) {
+    url.protocol = 'https:';
   }
-  return url.replace(/^http:\/\//i, 'https://');
+  if (!['https:', 'http:'].includes(url.protocol)) throw new Error('Use an HTTP(S) GDS URL');
+  if (!/\.(gds|oas)$/i.test(url.pathname)) throw new Error('URL must point to a .gds or .oas file');
+  return url.href;
 }
 
 const urlParams = new URLSearchParams(location.search);
-const GDS_URL = toHttps(urlParams.get('url') || urlParams.get('model'));
+const GDS_URL = urlParams.get('url') || urlParams.get('model');
 const GDS_PROCESS = urlParams.get('process');
-const PDK = urlParams.get('pdk') ?? legacyProcessToPDK[GDS_PROCESS] ?? 'sky130A';
+const requestedPDK = urlParams.get('pdk') ?? legacyProcessToPDK[GDS_PROCESS] ?? 'TR-1um';
+const PDK = PDK_LAYERS[requestedPDK] ? requestedPDK : 'TR-1um';
+const SAMPLE_URL =
+  'https://raw.githubusercontent.com/OpenSUSI/TR-1um/main/STDLIB/LogicCells/gds/INV_X1.gds';
 const OUTPUT_PROCESS_TO_CONSOLE = false;
 
 if (GDS_URL && GDS_URL.endsWith('.gltf')) {
@@ -78,9 +88,24 @@ let experimental_separate_layers_target = 0;
 // GUI dom elements
 let instanceClassTitleDiv = document.querySelector('div#instanceClassTitle');
 let informationDiv = document.querySelector('div#information');
-let loadingStatus = document.querySelector('div#loadingStatus');
+let loadingStatus = document.getElementById('loadingStatus');
 let crossSectionDiv = document.querySelector('div#crossSection');
 const dropZone = document.getElementById('dropZone');
+const urlForm = document.getElementById('urlForm');
+const urlInput = document.getElementById('urlInput');
+const importSummary = document.getElementById('importSummary');
+let loadingInProgress = false;
+let loadedLayerSummary;
+let labelTextures = new Map();
+
+urlForm.addEventListener('submit', (event) => {
+  event.preventDefault();
+  loadGDS(urlInput.value);
+});
+document.getElementById('sampleButton').addEventListener('click', () => {
+  urlInput.value = SAMPLE_URL;
+  loadGDS(SAMPLE_URL);
+});
 
 // Handle drag and drop
 dropZone.addEventListener('dragover', (e) => {
@@ -106,7 +131,7 @@ dropZone.addEventListener('drop', (e) => {
   }
 });
 
-dropZone.addEventListener('click', () => {
+function chooseLocalFile() {
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
   fileInput.accept = '.gds, .oas';
@@ -120,6 +145,13 @@ dropZone.addEventListener('click', () => {
   document.body.appendChild(fileInput);
   fileInput.click();
   fileInput.remove();
+}
+dropZone.addEventListener('click', chooseLocalFile);
+dropZone.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    chooseLocalFile();
+  }
 });
 
 // lil-gui controls
@@ -140,16 +172,7 @@ fps_stats.domElement.hidden = true;
 // Install vite's Hot Module Replacement (HMR) hook that listens for changes to the GLTF file
 // NOTE: this only works in vite's development server mode
 if (import.meta.hot) {
-  import.meta.hot.accept();
-  import.meta.hot.dispose(() => {
-    // clearGLTFScene();
-  });
-  import.meta.hot.on('my-gltf-change', () => {
-    console.log('GLTF file changed, reloading model...');
-    clearSelection();
-    let reset_camera = false;
-    loadGDS(GDS_URL, reset_camera); // Re-load the model without reseting the camera
-  });
+  import.meta.hot.on('my-gds-change', () => location.reload());
 }
 
 gdsProcessorWorker.addEventListener('error', function (event) {
@@ -200,6 +223,16 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       event.data.layer_datatype,
       mesh,
     );
+  } else if (event.data.type == WORKER_MSG_TYPE.ADD_LABEL) {
+    GDS.addLabel(
+      event.data.cell_name,
+      event.data.layer_number,
+      event.data.layer_datatype,
+      event.data.text,
+      event.data.origin_x,
+      event.data.origin_y,
+      event.data.pos_z,
+    );
   } else if (event.data.type == WORKER_MSG_TYPE.ADD_REFERENCE) {
     GDS.addReference(
       event.data.parent_cell_name,
@@ -217,10 +250,24 @@ gdsProcessorWorker.addEventListener('message', function (event) {
     // processProgressBar.innerText = Math.round(event.data.progress) + "%";
     // processProgressBar.value = Math.round(event.data.progress);
   } else if (event.data.type == WORKER_MSG_TYPE.PROCESS_ENDED) {
-    buildScene(null, true);
-    // buildScene(GDS.top_cells[0], true);
-    updateGuiAfterLoad();
-    initWindowEvents();
+    try {
+      buildScene(null, true);
+      updateGuiAfterLoad();
+      initWindowEvents();
+      loadingStatus.innerText = 'Loaded';
+      if (loadedLayerSummary) {
+        importSummary.innerText = `${loadedLayerSummary.visible.size} drawing/label layers shown · ${loadedLayerSummary.excluded.length} other layer types excluded`;
+      } else {
+        importSummary.innerText = 'Loaded (layer count is available for GDS files)';
+      }
+    } catch (error) {
+      loadingStatus.innerText = `Could not display GDS: ${error.message}`;
+      console.error(error);
+    }
+    loadingInProgress = false;
+  } else if (event.data.type == WORKER_MSG_TYPE.PROCESS_ERROR) {
+    loadingInProgress = false;
+    loadingStatus.innerText = `Processing failed: ${event.data.message}`;
   }
 });
 
@@ -257,10 +304,10 @@ function init() {
   initProcessLayers();
 
   if (GDS_URL) {
+    urlInput.value = GDS_URL;
     loadGDS(GDS_URL);
   } else {
     loadingStatus.innerText = '';
-    dropZone.classList.remove('hidden');
   }
 }
 
@@ -273,14 +320,26 @@ function initLayerVisibility() {
   }
 }
 
-function loadGDS(fileURL, reset_camera) {
+function loadGDS(inputURL) {
+  if (loadingInProgress) {
+    loadingStatus.innerText = 'Wait for the current file to finish loading';
+    return;
+  }
+  let fileURL;
+  try {
+    fileURL = normalizeGdsUrl(inputURL);
+  } catch (error) {
+    loadingStatus.innerText = error.message;
+    return;
+  }
+  loadingInProgress = true;
   loadingStatus.innerText = `Downloading ${fileURL}`;
 
   fetchWithProgressArrayBuffer(fileURL)
     .then((buffer) => {
       loadingStatus.innerText = 'Processing file';
 
-      const filename = fileURL.split('/').pop();
+      const filename = /\.oas$/i.test(new URL(fileURL).pathname) ? 'remote.oas' : 'remote.gds';
       const data = new Uint8Array(buffer); // File content as binary data
 
       // Warning: 'data' is detached after calling this function
@@ -288,9 +347,9 @@ function loadGDS(fileURL, reset_camera) {
       initLayerVisibility();
     })
     .catch((err) => {
-      loadingStatus.innerText = `Error loading file`;
-
-      console.log('Found error:', err);
+      loadingInProgress = false;
+      loadingStatus.innerText = `Could not fetch GDS: ${err.message}. Check the URL and CORS access, or upload the file.`;
+      console.error('GDS fetch failed:', err);
     });
 }
 
@@ -298,6 +357,11 @@ function loadGDS(fileURL, reset_camera) {
  * @param {File} file
  */
 function loadLocalGDS(file) {
+  if (loadingInProgress) {
+    loadingStatus.innerText = 'Wait for the current file to finish loading';
+    return;
+  }
+  loadingInProgress = true;
   const reader = new FileReader();
   loadingStatus.innerText = 'Processing file';
   reader.onload = function (event) {
@@ -307,18 +371,23 @@ function loadLocalGDS(file) {
       processGDS('local.' + file_extension.toLowerCase(), new Uint8Array(arrayBuffer));
       initLayerVisibility();
     } catch (error) {
+      loadingInProgress = false;
       loadingStatus.innerText = 'Error processing file';
       console.error('Error processing file', error);
     }
   };
   reader.onerror = function (event) {
+    loadingInProgress = false;
     loadingStatus.innerText = 'Error processing file';
   };
   reader.readAsArrayBuffer(file);
-  dropZone.classList.add('hidden');
 }
 
 function processGDS(filename, data) {
+  resetLoadedDesign();
+  loadedLayerSummary = filename.toLowerCase().endsWith('.gds')
+    ? summarizeGdsLayers(data, PDK_LAYERS[PDK])
+    : undefined;
   gdsProcessorWorker.postMessage(
     {
       type: WORKER_MSG_TYPE.PROCESS_GDS,
@@ -330,12 +399,28 @@ function processGDS(filename, data) {
   );
 }
 
+function resetLoadedDesign() {
+  cleanScene();
+  for (const mesh of Object.values(GDS.meshes)) mesh.threejs_mesh.geometry.dispose();
+  for (const texture of labelTextures.values()) texture.dispose();
+  labelTextures = new Map();
+  GDS.cells = {};
+  GDS.top_cells = [];
+  GDS.meshes = {};
+  viewSettings.layers = [];
+  viewSettings.layers_visibility = [];
+  cameraAnimmation.initialized = false;
+  importSummary.innerText = '';
+}
+
 function processCells() {
   gdsProcessorWorker.postMessage({ type: WORKER_MSG_TYPE.PROCESS_CELLS, opt_just_lines: false });
 }
 
 function initProcessLayers() {
   const process_layers = PDK_LAYERS[PDK];
+  for (const layer of Object.values(GDS.layers)) layer.threejs_material.dispose();
+  GDS.layers = {};
 
   for (let i = 0; i < process_layers.length; i++) {
     let layer_data = process_layers[i];
@@ -609,21 +694,30 @@ function initGUI() {
 }
 
 function updateGuiAfterLoad() {
-  loadingStatus.hidden = true;
+  for (const child of [...guiLayersFolder.children]) child.destroy();
+  viewSettings.layers = [];
+  viewSettings.layers_visibility = [];
   viewSettings.layers_visibility['ALL'] = true;
+
+  const usedLayers =
+    loadedLayerSummary?.visible ??
+    new Set([
+      ...Object.values(GDS.meshes).map((mesh) =>
+        GDS.makeLayerId(mesh.layer_number, mesh.layer_datatype),
+      ),
+      ...Object.values(GDS.cells).flatMap((cell) =>
+        cell.labels.map((label) => GDS.makeLayerId(label.layer_number, label.layer_datatype)),
+      ),
+    ]);
+  const visibleLayers = Object.entries(GDS.layers).filter(([layer_id]) => usedLayers.has(layer_id));
+  const layerControllers = [];
 
   // Layers visibility
   guiLayersFolder.add(viewSettings.layers_visibility, 'ALL').onChange(function (new_value) {
-    for (const [layer_id, layer] of Object.entries(GDS.layers)) {
-      let material_visibility_prop = guiLayersFolder.children.find(function (child) {
-        return child.property == layer.name;
-      });
-
-      material_visibility_prop.setValue(new_value);
-    }
+    for (const controller of layerControllers) controller.setValue(new_value);
   });
 
-  for (const [layer_id, layer] of Object.entries(GDS.layers)) {
+  for (const [layer_id, layer] of visibleLayers) {
     viewSettings.layers[layer.name] = layer;
     viewSettings.layers_visibility[layer.name] = true;
     let widget = guiLayersFolder
@@ -643,6 +737,7 @@ function updateGuiAfterLoad() {
           raycaster.layers.disable(getTHREEJSLayerFromGDSLayer(viewSettings.layers[this._name]));
         }
       });
+    layerControllers.push(widget);
     widget.domElement.style =
       'border-left: 5px solid #' +
       layer.threejs_material.color.getHexString(THREE.LinearSRGBColorSpace) +
@@ -861,8 +956,7 @@ function clearSelection() {
   if (isolation_history && isolation_history.length > 0) {
     const back_node = isolation_history[isolation_history.length - 1];
     const item = document.createElement('div');
-    item.innerHTML =
-      "back to <a href='#'>" + back_node.instance_name + ' </a>( ' + back_node.cell_name + ' )';
+    item.textContent = `back to ${back_node.instance_name} (${back_node.cell_name})`;
     item.className = 'selection_link';
     item.onmousedown = function () {
       isolation_history.pop();
@@ -888,8 +982,9 @@ function clearSelection() {
 
 function selectNode(graph_node) {
   // Display selection info:
-  let infoHTML = '<br />SELECTION:<br />';
-  informationDiv.innerHTML += infoHTML;
+  const heading = document.createElement('div');
+  heading.textContent = 'SELECTION:';
+  informationDiv.appendChild(heading);
   let tree_list = [];
   let current_node = graph_node;
   while (current_node != undefined) {
@@ -903,12 +998,9 @@ function selectNode(graph_node) {
     // const class_text = tree_node.instance_name ? '( ' + tree_node.cell_name + ' )' : '';
     // item.innerHTML = "<a href='#'>" + tree_node.instance_name + ' </a>' + class_text;
 
-    if (tree_node.instance_name) {
-      item.innerHTML =
-        "<a href='#'>" + tree_node.instance_name + ' </a>' + '( ' + tree_node.cell_name + ' )';
-    } else {
-      item.innerHTML = "<a href='#'>" + tree_node.cell_name + ' </a>';
-    }
+    item.textContent = tree_node.instance_name
+      ? `${tree_node.instance_name} (${tree_node.cell_name})`
+      : tree_node.cell_name;
 
     item.className = 'selection_link';
     item.style.paddingLeft = padding + 'px';
@@ -1179,6 +1271,7 @@ function resetRenderer() {
 }
 
 window.onresize = function () {
+  if (!camera || !renderer) return;
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1335,9 +1428,11 @@ function cleanScene() {
   }
 
   if (scene_root_group != undefined) {
+    scene_root_group.traverse((object) => {
+      if (object.isSprite) object.material.dispose();
+    });
     scene.remove(scene_root_group);
-
-    //  scene_root_group = undefined; ??
+    scene_root_group = undefined;
   }
 
   GDS.root_node = null;
@@ -1354,6 +1449,7 @@ function cleanScene() {
 function buildSceneDoNodeCalcs(node, parent_matrix) {
   const node_matrix = node.matrix.clone();
   node_matrix.premultiply(parent_matrix);
+  node.world_matrix = node_matrix;
 
   const cell = GDS.cells[node.cell_name];
 
@@ -1465,6 +1561,47 @@ function buildMeshesScene(top_node, main_matrix) {
   scene.add(scene_root_group);
 }
 
+function getLabelTexture(text, color) {
+  const key = `${text}|${color}`;
+  if (labelTextures.has(key)) return labelTextures.get(key);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.min(2048, Math.max(128, text.length * 34 + 20));
+  canvas.height = 80;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = `#${color}`;
+  ctx.font = 'bold 52px sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, 8, 40);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  labelTextures.set(key, texture);
+  return texture;
+}
+
+function buildLabelsScene() {
+  for (const node of GDS.nodes) {
+    for (const label of GDS.cells[node.cell_name].labels) {
+      if (!label.text) continue;
+      const layerId = GDS.makeLayerId(label.layer_number, label.layer_datatype);
+      const layer = GDS.layers[layerId];
+      if (!layer) continue;
+      const color = layer.threejs_material.color.getHexString(THREE.LinearSRGBColorSpace);
+      const material = new THREE.SpriteMaterial({
+        map: getLabelTexture(label.text, color),
+        transparent: true,
+        depthTest: false,
+      });
+      const sprite = new THREE.Sprite(material);
+      sprite.position.set(label.x, label.y, label.z).applyMatrix4(node.world_matrix);
+      sprite.scale.set(Math.max(2, label.text.length * 1.1), 2, 1);
+      sprite.layers.set(getTHREEJSLayerFromGDSLayerId(layerId));
+      sprite.raycast = () => {};
+      scene_root_group.add(sprite);
+    }
+  }
+}
+
 function buildScene(node, reset_camera = true) {
   cleanScene();
 
@@ -1473,7 +1610,9 @@ function buildScene(node, reset_camera = true) {
   let main_matrix = new THREE.Matrix4();
 
   if (node == null) {
-    GDS.root_node = GDS.addNode(GDS.top_cells[0], GDS.top_cells[0], new THREE.Matrix4(), null);
+    const topCell = GDS.primaryTopCell();
+    if (!topCell) throw new Error('No displayable top cell in GDS');
+    GDS.root_node = GDS.addNode(topCell, topCell, new THREE.Matrix4(), null);
   } else {
     node.scene_bounding_box = null;
     GDS.root_node = node;
@@ -1482,6 +1621,7 @@ function buildScene(node, reset_camera = true) {
   buildSceneDoNodeCalcs(GDS.root_node, main_matrix);
 
   buildMeshesScene(GDS.root_node, main_matrix);
+  buildLabelsScene();
 
   // // Test for checking nodes bounding boxes
   // // Those bounding boxes could then be used to filter objects for raycasting
@@ -1509,10 +1649,10 @@ function buildScene(node, reset_camera = true) {
   }
 
   if (GDS.root_node.instance_name) {
-    instanceClassTitleDiv.innerHTML =
+    instanceClassTitleDiv.textContent =
       GDS.root_node.instance_name + ' (' + GDS.root_node.cell_name + ')';
   } else {
-    instanceClassTitleDiv.innerHTML = GDS.root_node.cell_name;
+    instanceClassTitleDiv.textContent = GDS.root_node.cell_name;
   }
 
   viewSettings.filler_cells = true;

@@ -12,6 +12,7 @@ const WORKER_MSG_TYPE = {
   FINISHED_REFERENCES: 'finished_references',
 
   PROCESS_ENDED: 'process_ended',
+  PROCESS_ERROR: 'process_error',
 
   PROCESS_PROGRESS: 'process_progress',
 

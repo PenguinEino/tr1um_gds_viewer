@@ -1,7 +1,7 @@
 {
-  "name": "tinytapeout_gds_viewer",
+  "name": "tr1um_gds_viewer",
   "version": "1.0.0",
-  "description": "Tiny Tapeout GDS Viewer",
+  "description": "OpenSUSI TR-1um drawing-layer GDS Viewer",
   "main": "src/index.js",
   "scripts": {
     "start": "vite",
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TinyTapeout/tinytapeout_gds_viewer.git"
+    "url": "git+https://github.com/PenguinEino/tr1um_gds_viewer.git"
   },
   "author": "",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/TinyTapeout/tinytapeout_gds_viewer/issues"
+    "url": "https://github.com/PenguinEino/tr1um_gds_viewer/issues"
   },
-  "homepage": "https://github.com/TinyTapeout/tinytapeout_gds_viewer#readme",
+  "homepage": "https://PenguinEino.github.io/tr1um_gds_viewer/",
   "dependencies": {
     "three": "^0.161.0"
   },

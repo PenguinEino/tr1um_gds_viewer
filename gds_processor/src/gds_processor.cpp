@@ -489,14 +489,13 @@ extern "C"
 
             // LABELS
             
-            const Tag label_layers[] = {make_tag(67, 5), make_tag(68, 5), make_tag(69, 5), make_tag(70, 5), make_tag(71, 5), make_tag(72, 5)};
-            const double label_layers_heights[] = {1.136 + 0.03, 1.736 + 0.03, 2.36 + 0.03, 3.631 + 0.03, 4.8661 + 0.03, 6.6311 + 0.03};
             Array<Label *> labels = {};
 
-            for (int layer_idx = 0; layer_idx < ARRAY_LENGTH(label_layers); layer_idx++)
+            // Use the configured PDK layers, rather than SKY130-specific label tags.
+            for (int layer_idx = 0; layer_idx < g_layer_stack.count; layer_idx++)
             {
-                const Tag tag = label_layers[layer_idx];
-                const double pos_z = label_layers_heights[layer_idx];
+                const Tag tag = g_layer_stack[layer_idx].tag;
+                const double pos_z = g_layer_stack[layer_idx].zmax + 0.03;
 
                 cell->get_labels(true, depth, true, tag, labels);
 

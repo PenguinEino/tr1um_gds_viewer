@@ -1,15 +1,42 @@
-# tinytapeout_gds_viewer
+# TR-1um GDS Viewer
 
-you can use https://github.com/mbalestrini/GDS2glTF to generate the glTF file from a GDS file (right now tested and built for SKY130 pdk and small designs)
+A browser-based 3D viewer for [OpenSUSI TR-1um](https://github.com/OpenSUSI/TR-1um) drawing-layer GDS files, forked from [Tiny Tapeout GDS Viewer](https://github.com/TinyTapeout/tinytapeout_gds_viewer). The 3D layer heights are illustrative and are not measured process thicknesses. This is a viewer, not a DRC, LVS, or MDP tool.
 
-## Local development
+## Open a design
 
-You need nodejs 16 or higher installed. Get it from https://nodejs.org/en/download/.
+- Drop a `.gds` file on the import panel, or click the drop area to choose a local file. The GDS stays in your browser.
+- Paste an HTTPS URL ending in `.gds` and choose **Load URL**. GitHub `blob` URLs are converted to `raw.githubusercontent.com` URLs. The remote server must allow browser access with CORS; if it does not, download the file and upload it locally.
+- Share a direct link with `?url=<encoded GDS URL>`. The viewer also retains the upstream `?pdk=` query option; TR-1um is the default.
 
-Run `npm install` to install dependencies.
+The viewer shows only layer types present in the loaded GDS that are in the TR-1um drawing-layer set below. It reports the number of other layer types omitted. You can load another file in the same tab after the current one finishes.
 
-Finally, run `npm start` to start the development server. Go to http://localhost:5173 to see the app.
+## TR-1um layer set
 
-## Deployment
+`WN 140/0`, `AP 3/1`, `AN 3/2`, `AR 3/3`, `AC 3/4`, `GC 8/1`, `GR 8/2`, `CO 11/0`, `M1 13/0`, `V1 19/0`, `M2 20/0`, and `PO 14/0`. The current MDP script also accepts `TC23 121/0` and `M3 122/0`, which appear when present. Text and pin layers `TXM1 48/0`, `PIN 48/1`, and `TXM2 49/0` are also shown.
 
-Run `npm run build` to build the app for production. The build artifacts will be stored in the `dist/` directory.
+These mappings follow the [OpenSUSI GDSII table](https://github.com/OpenSUSI/TR-1um/blob/main/Document/TR-1um_GDSII_Table.xlsx), [KLayout layer palette](https://github.com/OpenSUSI/TR-1um/blob/main/libs.tech/klayout/tech/TR-1um.lyp), and [MDP input definitions](https://github.com/OpenSUSI/TR-1um/blob/main/libs.tech/klayout/tech/drc/run_mdp.drc). Generated masks and recognition layers, such as `NW`, `NF`, `PF`, implants, and `DLXXXX`, are excluded even if they are present in the input file. No MDP is run in the browser.
+
+## Development
+
+Requires Node.js 16 or newer:
+
+```sh
+npm ci
+npm run start
+```
+
+Open `http://localhost:5173/`. Run `npm run build` to create the static site in `dist/`.
+
+## Rebuild the GDS processor
+
+The source is in `gds_processor/`; the generated `src/gds_processor.js` and `src/gds_processor.wasm` are committed. Rebuild them after C++ changes using [Emscripten SDK](https://emscripten.org/docs/getting_started/downloads.html) 4.0.2, CMake, and the repository submodules:
+
+```sh
+git submodule update --init --recursive
+source /path/to/emsdk/emsdk_env.sh
+embuilder build zlib
+emcmake cmake -S gds_processor -B gds_processor/build_release -DCMAKE_BUILD_TYPE=Release
+cmake --build gds_processor/build_release -j4
+```
+
+The included GitHub Actions workflow builds and publishes `dist/` to GitHub Pages.
