@@ -41,46 +41,44 @@ export function createPresetBrowser(onLoad) {
     const members = document.createElement('div');
     members.className = 'preset-members';
     const groups = new Map();
-    for (const member of [...preset.members, ...(preset.projectCredits ?? [])]) {
-      if (!groups.has(member.design)) groups.set(member.design, []);
-      groups.get(member.design).push(member);
+    const focusButtons = [];
+    for (const member of preset.members) {
+      const key = JSON.stringify([member.design, member.cells]);
+      if (!groups.has(key)) groups.set(key, { ...member, names: [] });
+      groups.get(key).names.push(member.name);
     }
-    for (const [design, contributors] of groups) {
-      const group = document.createElement('div');
-      group.className = 'preset-credit-group';
-      const heading = document.createElement('div');
+    for (const circuit of [...groups.values(), ...(preset.additionalCircuits ?? [])]) {
+      const row = document.createElement('div');
+      row.className = 'preset-circuit-row';
+      const focus = document.createElement('button');
+      focus.type = 'button';
+      focus.className = 'preset-circuit-focus';
+      focus.setAttribute(
+        'aria-label',
+        [preset.name, circuit.design, ...(circuit.names ?? [])].join(' · '),
+      );
+      const heading = document.createElement('span');
       heading.className = 'preset-circuit-name';
-      if (design === 'Project author (info.yaml)') setText(heading, design);
-      else heading.textContent = design;
-      const links = document.createElement('div');
-      links.className = 'preset-credit-links';
-      for (const member of contributors) {
-        const link = document.createElement('a');
-        link.textContent = member.name;
-        link.href = member.url;
-        link.title = member.design;
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        const credit = document.createElement('span');
-        credit.append(link);
-        if (member.note) {
-          const note = document.createElement('small');
-          setText(note, member.note);
-          credit.append(note);
-        }
-        links.append(credit);
+      heading.textContent = circuit.design;
+      focus.append(heading);
+      if (circuit.names?.length) {
+        const names = document.createElement('span');
+        names.className = 'preset-credit-names';
+        names.textContent = circuit.names.join(' · ');
+        focus.append(names);
       }
-      group.append(heading, links);
-      members.append(group);
-    }
-    for (const circuit of preset.additionalCircuits ?? []) {
-      const link = document.createElement('a');
-      link.className = 'preset-circuit-source';
-      link.textContent = circuit.design;
-      link.href = circuit.url;
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-      members.append(link);
+      focus.addEventListener('click', () => onLoad(preset.url, circuit.cells));
+      focusButtons.push({ button: focus, cells: circuit.cells });
+      const source = document.createElement('a');
+      source.className = 'preset-circuit-source';
+      source.textContent = '↗';
+      source.href = circuit.url;
+      source.target = '_blank';
+      source.rel = 'noopener noreferrer';
+      source.dataset.i18nAria = 'Circuit source';
+      source.setAttribute('aria-label', t('Circuit source'));
+      row.append(focus, source);
+      members.append(row);
     }
     const footer = document.createElement('div');
     footer.className = 'preset-footer';
@@ -102,8 +100,9 @@ export function createPresetBrowser(onLoad) {
       preset,
       card,
       open,
+      focusButtons,
       searchText:
-        `${preset.name} ${preset.description} ${[...preset.members, ...(preset.projectCredits ?? [])].map((m) => m.name).join(' ')}`.toLocaleLowerCase(),
+        `${preset.name} ${preset.description} ${preset.members.map((m) => m.name).join(' ')}`.toLocaleLowerCase(),
     };
   });
   function filter() {
@@ -121,14 +120,26 @@ export function createPresetBrowser(onLoad) {
   filter();
   return {
     setBusy(busy) {
-      for (const { open } of entries) open.disabled = busy;
+      for (const { open, focusButtons } of entries) {
+        open.disabled = busy;
+        for (const { button } of focusButtons) button.disabled = busy;
+      }
       list.setAttribute('aria-busy', String(busy));
     },
-    setActive(url) {
-      for (const { preset, card, open } of entries) {
+    setActive(url, cells = []) {
+      for (const { preset, card, open, focusButtons } of entries) {
         const active = preset.url === url;
         card.classList.toggle('active', active);
         open.setAttribute('aria-pressed', String(active));
+        for (const target of focusButtons) {
+          const focused =
+            active &&
+            cells.length > 0 &&
+            target.cells.length === cells.length &&
+            target.cells.every((name) => cells.includes(name));
+          target.button.classList.toggle('focused', focused);
+          target.button.setAttribute('aria-pressed', String(focused));
+        }
       }
     },
   };

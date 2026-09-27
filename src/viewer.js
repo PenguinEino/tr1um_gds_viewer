@@ -8,6 +8,7 @@ import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
 import { createPresetBrowser } from './preset_browser.js';
+import { resolvePresetNodes } from './preset_focus.js';
 import { getLayerSpacingTransform } from './layer_spacing.js';
 import { t, setText, setLanguage } from './i18n.js';
 import {
@@ -111,13 +112,21 @@ const urlInput = document.getElementById('urlInput');
 const languageSelect = document.getElementById('languageSelect');
 let loadingInProgress = false;
 let pendingSourceUrl = null;
+let loadedSourceUrl = null;
+let pendingFocusCells = [];
+let focusedPresetNodes = [];
 let loadedLayerSummary;
 let labelTextures = new Map();
 
-const presetBrowser = createPresetBrowser((url) => {
+const presetBrowser = createPresetBrowser((url, cells = []) => {
   if (loadingInProgress) return;
   urlInput.value = url;
-  loadGDS(url);
+  if (loadedSourceUrl === normalizeGdsUrl(url) && GDS.root_node) {
+    focusPresetCells(cells);
+    presetBrowser.setActive(loadedSourceUrl, cells);
+    return;
+  }
+  loadGDS(url, cells);
 });
 function setLoadingInProgress(value) {
   loadingInProgress = value;
@@ -311,7 +320,8 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       else pageUrl.searchParams.delete('url');
       history.replaceState(null, '', pageUrl);
       const sourceUrl = pendingSourceUrl ? normalizeGdsUrl(pendingSourceUrl) : null;
-      presetBrowser.setActive(sourceUrl);
+      loadedSourceUrl = sourceUrl;
+      presetBrowser.setActive(sourceUrl, pendingFocusCells);
       setText(loadingStatus, 'blank');
       urlForm.hidden = true;
       urlToggle.setAttribute('aria-expanded', 'false');
@@ -320,6 +330,8 @@ gdsProcessorWorker.addEventListener('message', function (event) {
         !document.documentElement.classList.contains('presets-collapsed')
       )
         toggleSidebar();
+      if (pendingFocusCells.length) focusPresetCells(pendingFocusCells);
+      pendingFocusCells = [];
     } catch (error) {
       setText(loadingStatus, 'displayError', { error: error.message });
       console.error(error);
@@ -385,7 +397,7 @@ function initLayerVisibility() {
   }
 }
 
-function loadGDS(inputURL) {
+function loadGDS(inputURL, focusCells = []) {
   if (loadingInProgress) {
     setText(loadingStatus, 'Wait for the current file to finish loading');
     return;
@@ -399,6 +411,7 @@ function loadGDS(inputURL) {
   }
   setLoadingInProgress(true);
   pendingSourceUrl = inputURL.trim();
+  pendingFocusCells = [...focusCells];
   setText(loadingStatus, 'Loading');
 
   fetchWithProgressArrayBuffer(fileURL)
@@ -429,6 +442,7 @@ function loadLocalGDS(file) {
   }
   setLoadingInProgress(true);
   pendingSourceUrl = null;
+  pendingFocusCells = [];
   const reader = new FileReader();
   setText(loadingStatus, 'Processing file');
   reader.onload = function (event) {
@@ -467,6 +481,7 @@ function processGDS(filename, data) {
 }
 
 function resetLoadedDesign() {
+  loadedSourceUrl = null;
   // Isolation history belongs to the previous GDS, not the next one.
   isolation_history = [];
   cameraAnimmation.animate = false;
@@ -1156,6 +1171,7 @@ function setBWModeOn(bw_mode_on) {
 }
 
 function clearSelection() {
+  focusedPresetNodes = [];
   turnOffHighlight();
   informationDiv.innerHTML = '';
   if (isolation_history && isolation_history.length > 0) {
@@ -1235,6 +1251,51 @@ function selectNode(graph_node) {
 
   guiZoomSelectionButton.enable();
   guiZoomSelectionButton.name(t('zoom', { name: graph_node.instance_name }));
+}
+
+function focusPresetCells(cellNames) {
+  // Restore the whole MPW if the user previously isolated a cell.
+  if (GDS.root_node.cell_name !== GDS.primaryTopCell()) {
+    isolation_history = [];
+    buildScene(null, false);
+  }
+  clearSelection();
+  if (!cellNames.length) {
+    zoomNode(GDS.root_node);
+    return;
+  }
+  const { nodes, missing } = resolvePresetNodes(GDS.root_node, cellNames);
+  if (missing.length || !nodes.length) {
+    setText(loadingStatus, 'Circuit not found', { cells: missing.join(', ') });
+    return;
+  }
+  setText(loadingStatus, 'blank');
+  if (nodes.length === 1) {
+    selectNode(nodes[0]);
+    zoomNode(nodes[0]);
+    return;
+  }
+  // A logical circuit can occupy several sibling cells. Fit their combined
+  // world-space bounds without including unrelated circuits in their parent.
+  focusedPresetNodes = nodes;
+  const bounds = new THREE.Box3();
+  for (const node of nodes) {
+    bounds.union(node.scene_bounding_box);
+    highlightObject(node);
+    const item = document.createElement('div');
+    item.className = 'selection_link';
+    item.textContent = node.cell_name;
+    item.onmousedown = () => {
+      clearSelection();
+      selectNode(node);
+      zoomNode(node);
+    };
+    informationDiv.append(item);
+  }
+  if (!selection_helper) selection_helper = new THREE.Box3Helper(bounds);
+  else selection_helper.box = bounds;
+  scene_root_group.add(selection_helper);
+  zoomNode({ scene_bounding_box: bounds });
 }
 
 function selectParent() {
@@ -1428,13 +1489,17 @@ function highlightObject(graph_node) {
 }
 
 function turnOffHighlight() {
+  let colorIndex = 0;
   for (let i = 0; i < highlighted_objects.length; i++) {
     const graph_node = highlighted_objects[i];
 
     const cell = GDS.cells[graph_node.cell_name];
     for (let i = 0; i < cell.meshes_names.length; i++) {
       const instancedMesh = GDS.meshes[cell.meshes_names[i]].threejs_instanced_mesh;
-      instancedMesh.setColorAt(graph_node.instanced_mesh_idx, highlighted_prev_colors[i].clone());
+      instancedMesh.setColorAt(
+        graph_node.instanced_mesh_idx,
+        highlighted_prev_colors[colorIndex++].clone(),
+      );
       instancedMesh.instanceColor.needsUpdate = true;
     }
   }
@@ -1776,6 +1841,10 @@ function updateLayerSpacing() {
     }
   }
   refreshBounds(GDS.root_node);
+  if (focusedPresetNodes.length && selection_helper) {
+    selection_helper.box.makeEmpty();
+    for (const node of focusedPresetNodes) selection_helper.box.union(node.scene_bounding_box);
+  }
   updateSceneLighting();
 }
 

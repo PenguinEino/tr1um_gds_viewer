@@ -126,7 +126,7 @@ let GDS = {
   addNode: function (cell_name, instance_name, matrix, parent) {
     let node = {
       cell_name: cell_name,
-      instance_name: instance_name,
+      instance_name: instance_name && instance_name !== '???' ? instance_name : cell_name,
       matrix: matrix,
       scene_bounding_box: null,
       children: [],

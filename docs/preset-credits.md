@@ -9,13 +9,13 @@
 
 ## 記載が食い違う／名前が公開されていない箇所
 
-- **SiCA 08**：READMEとdocs/info.mdはHaruto_Tanakaと書き、存在しない1bitCPUファイルへリンクしています。実際の提出GDSのトップセル参照は`1bitCPU_Kanta_Fukuda`です。ビューアではKanta_Fukudaを「GDSセル名の表記」として掲載し、GDSへリンクします。SiCA 07のHaruto_Tanakaとは分けています。
-- **OpenSUSI 05**：READMEには3zkiの計装アンプとPenguinEinoのVGAだけが載っています。提出GDSには`AUDIO_OPAMP01 → opamp_r2r_saito`も存在します。AUDIO OPAMP 09のREADMEが同名の回路をDaisukeSaitoに対応付けているため、その名前を「GDSセル名を照合」と明記して補いました。セル名による帰属の推定であり、両チップの全図形が同一という意味ではありません。
+- **SiCA 08**：READMEとdocs/info.mdはHaruto_Tanakaと書き、存在しない1bitCPUファイルへリンクしています。実際の提出GDSのトップセル参照は`1bitCPU_Kanta_Fukuda`です。ビューアではKanta_Fukudaを掲載し、MPWリポジトリへリンクします。SiCA 07のHaruto_Tanakaとは分けています。
+- **OpenSUSI 05**：READMEには3zkiの計装アンプとPenguinEinoのVGAだけが載っています。提出GDSには`AUDIO_OPAMP01 → opamp_r2r_saito`も存在します。AUDIO OPAMP 09のREADMEが同名の回路をDaisukeSaitoに対応付けているため、その名前を補いました。セル名による帰属の推定であり、両チップの全図形が同一という意味ではありません。
 - **KOSEN 04 / Qdai 04**：README前半の1bit-CPUハンズオンは開催背景です。実際のGDSにはCPUセルがなく、KOSEN 04はRFミキサー一式、Qdai 04はTiny555と4bit SRAMです。以前の「1bit-CPU」を削除しました。
-- **サンケン電気枠**：READMEはテンプレートのままです。一覧の5名に加え、GDSとSPICEの名前付きセル`fujii_inverter`、`kamiyama_inverter`、`kamiyama_Driver`、`kawamoto_inverter`、`shishido_opamp_v12`を掲載しました。fujii等はセル名の表記であり、フルネームを推定していません。`mmOPAMP`・`mmBIAS`、回路選択用アナログスイッチ・デコーダも載せていますが、作者名は資料にないため割り当てていません。info.yamlのTakanaga Yamazakiは回路作者と断定せず「登録著者」として表示します。一覧のexdojpは、提出ファイルの`inverter_exodjp`およびディレクトリ名に合わせてexodjpに直しました。
+- **サンケン電気枠**：READMEはテンプレートのままです。一覧の5名に加え、GDSとSPICEの名前付きセル`fujii_inverter`、`kamiyama_inverter`、`kamiyama_Driver`、`kawamoto_inverter`、`shishido_opamp_v12`を掲載しました。fujii等はセル名の表記であり、フルネームを推定していません。`mmOPAMP`・`mmBIAS`、回路選択用アナログスイッチ・デコーダも載せていますが、作者名は資料にないため割り当てていません。info.yamlにはTakanaga Yamazakiとありますが、回路との対応が明記されていないため画面には掲載しません。一覧のexdojpは、提出ファイルの`inverter_exodjp`およびディレクトリ名に合わせてexodjpに直しました。
 - **ZEP**：一覧にないkato・sasaki・kudoを、各inverterディレクトリと提出GDS（`inverter_kato1`・`inverter_ssk`・`inverter_kudo`）から追加。巨大インバータとリングVCOは回路として追加しましたが、作者名が明記されていないため個人名は割り当てていません。
 - **京都府立工業高校**：公開されているチームAK・HK・KM・MRを全て掲載。個々の生徒の名前は公開リポジトリに記載がないため、チーム名を使います。
-- **AMラジオ**：[公開メンバーロゴ](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1/blob/main/member_project/AM_Radio/Yamada3/image/AMRadioMember.png)の7名を全て掲載。OpenSUSI 03はnoritsunaのレイアウトと元回路のYamada3チームを分けました。
+- **AMラジオ**：[公開メンバーロゴ](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1/blob/main/member_project/AM_Radio/Yamada3/image/AMRadioMember.png)の7名を全て掲載。OpenSUSI 03に搭載されているのはnoritsunaの究極のレイアウト版なので、画面上はnoritsunaだけを掲載します。
 - **DCDC**：一覧のDCDCというディレクトリ名を人名扱いしていたため、公開された実プロジェクトディレクトリ`DCDC/ShuntaroOHNO`に訂正しました。
 
 以下は公開資料で確認できる範囲の全掲載クレジットです。公開されていないチーム内の個人名や、匿名セルの実作者まで網羅したと断定するものではありません。
@@ -50,10 +50,9 @@
 
 ### サンケン電気枠
 
-- インバータ回路：fujii（GDS cell name）, kawamoto（GDS cell name）, exodjp, july_fifth, kubotakeshi, pankani, yasushitech
-- インバータ回路 / Driver：kamiyama（GDS cell name）
-- OPAMP回路：shishido（GDS cell name）
-- Project author (info.yaml)：Takanaga Yamazaki
+- インバータ回路：fujii, kawamoto, exodjp, july_fifth, kubotakeshi, pankani, yasushitech
+- インバータ回路 / Driver：kamiyama
+- OPAMP回路：shishido
 - OPAMP / バイアス（mmOPAMP・mmBIAS）（個人名の記載なし）
 - 回路選択用アナログスイッチ / デコーダ（個人名の記載なし）
 
@@ -250,7 +249,7 @@
 
 ### SiCA 08
 
-- 1bit-CPU回路：Kanta_Fukuda（GDS cell name）
+- 1bit-CPU回路：Kanta_Fukuda
 - OPAMP回路：july_fifth
 
 照合元：
@@ -407,8 +406,7 @@
 
 ### OpenSUSI 03
 
-- AMラジオ（レイアウト）：noritsuna
-- AMラジオ（元回路・Yamada3チーム）：Yamada3, Maehashi, Munetomo, reodon, Sadakata, tk, Yutaka KOTANI
+- AMラジオ（究極のレイアウト版）：noritsuna
 
 照合元：
 
@@ -430,7 +428,7 @@
 
 ### OpenSUSI 05
 
-- オーディオ用OPAMP回路：DaisukeSaito（Matched GDS cell）
+- オーディオ用OPAMP回路：DaisukeSaito
 - 計装アンプ：3zki
 - RGB121 VGA出力回路：PenguinEino
 
@@ -442,3 +440,9 @@
 - [資料 4](https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/blob/main/src/tr_1um_OpenSUSI05.gds)
 - [提出GDS](https://raw.githubusercontent.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1_OpenSUSI05/main/src/tr_1um_OpenSUSI05.gds) — SHA-256: `042b31fe3a9358d11799a2a44a441c47559a53669a4c4f66bedd832c06d4fec2`
 
+
+## 回路フォーカス
+
+各掲載回路の`cells`を、37件の提出GDSのトップセルから辿れるセルと照合しました。回路の欄はMPWを開いて該当セルを選択・拡大し、右の外部リンクは個人フォルダ（なければMPWリポジトリ）を開きます。1bitCPUのように個人別ファイルだけが共通フォルダに置かれている場合も、MPWリポジトリへリンクします。
+
+階層内のセルを名前の完全一致で探索します。複数セルから構成される回路は、それらの表示上の境界をまとめて拡大します。GDS更新でセルがなくなった場合は別回路へ誤って移動せず、見つからなかった名前を表示します。

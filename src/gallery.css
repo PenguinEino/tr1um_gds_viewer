@@ -227,35 +227,57 @@
 .preset-members {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 4px 14px 0;
+  gap: 6px;
+  padding: 4px 8px 0;
   font-size: 11px;
   line-height: 1.6;
 }
-.preset-circuit-name {
-  color: #9ca8b8;
-  margin-bottom: 4px;
+.preset-circuit-row {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+.preset-circuit-focus {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #c4d3e6;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   overflow-wrap: anywhere;
 }
-.preset-credit-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
+.preset-circuit-focus.focused {
+  background: #2d3a4a;
+  border-color: #819bbb;
 }
-.preset-credit-links small {
+.preset-circuit-focus:disabled {
+  cursor: progress;
+}
+.preset-circuit-name {
   display: block;
-  font-size: 10px;
-  color: #8e9aaa;
+  color: #9ca8b8;
+}
+.preset-credit-names {
+  display: block;
+  margin-top: 4px;
 }
 .preset-circuit-source {
-  font-size: 11px;
-}
-.preset-members a {
-  color: #c4d3e6;
+  display: flex;
+  align-items: center;
+  padding: 0 7px;
+  color: #97a5b7;
   text-decoration: none;
-  overflow-wrap: anywhere;
+  border-radius: 6px;
+  font-size: 15px;
 }
-.preset-members a:hover,
+.preset-circuit-source:hover {
+  background: #303741;
+  color: #dce4ef;
+}
 .preset-footer a:hover {
   text-decoration: underline;
 }

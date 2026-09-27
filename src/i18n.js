@@ -18,12 +18,11 @@ const messages = {
   'Community links': ['関連リンク', 'Community links', '相关链接'],
   'Source repository': ['GitHub · ソースコード', 'GitHub · Source code', 'GitHub · 源代码'],
   Licenses: ['ライセンス', 'License', '许可证'],
-  'GDS cell name': ['GDSセル名の表記', 'Name from GDS cell', 'GDS单元名称'],
-  'Matched GDS cell': ['GDSセル名を照合', 'Matched by GDS cell name', '按GDS单元名核对'],
-  'Project author (info.yaml)': [
-    '登録著者（info.yaml）',
-    'Registered author (info.yaml)',
-    '登记作者（info.yaml）',
+  'Circuit source': ['回路のリポジトリを開く', 'Open circuit repository', '打开电路仓库'],
+  'Circuit not found': [
+    '該当セルが見つかりません：{cells}',
+    'Circuit cells not found: {cells}',
+    '找不到电路单元：{cells}',
   ],
   Language: ['言語', 'Language', '语言'],
   'Open GDS': ['GDSを開く', 'Open GDS', '打开 GDS'],

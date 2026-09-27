@@ -111,7 +111,8 @@ https://github.com/ishi-kai/ISHI-KAI_Multiple_Projects_OpenMPW_OpenSUSI-TR10-1
 Circuit credits were cross-checked against that index, all 37 MPW repositories
 and the submitted GDS hierarchies (2026-09-27). See
 [the credit audit](https://github.com/PenguinEino/tr1um_gds_viewer/blob/main/docs/preset-credits.md) for sources, source conflicts, and
-credits inferred from named GDS cells. Unpublished identities are not invented.
+credits inferred from named GDS cells. These research notes are kept out of the
+gallery UI. Unpublished identities are not invented.
 Project names and credits remain in their source language.
 
 `public/previews/sanken.png` is a top-view screenshot rendered by this viewer
