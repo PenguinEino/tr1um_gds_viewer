@@ -65,12 +65,14 @@
         border-color: #fff;
         background: #31415d;
       }
-      #urlForm {
+      #urlForm,
+      #presetForm {
         display: flex;
         gap: 6px;
         margin: 8px 0;
       }
-      #urlInput {
+      #urlInput,
+      #presetSelect {
         flex: 1;
         min-width: 0;
         padding: 7px;
@@ -147,6 +149,13 @@
     <section id="loadPanel" aria-label="GDS input">
       <details id="importControls" open>
         <summary>TR-1um GDS Viewer · Open GDS</summary>
+        <label for="presetSelect">MPW preset</label>
+        <form id="presetForm">
+          <select id="presetSelect" required>
+            <option value="">Select a chip…</option>
+          </select>
+          <button type="submit">Load</button>
+        </form>
         <div id="dropZone" role="button" tabindex="0">Drop a GDS file here or click to select</div>
         <form id="urlForm">
           <input

@@ -6,6 +6,7 @@ import { WORKER_MSG_TYPE } from './defines.js';
 import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
+import { GDS_PRESETS } from './gds_presets.js';
 import {
   getLayerPattern,
   applyLayerPattern,
@@ -99,11 +100,22 @@ let crossSectionDiv = document.querySelector('div#crossSection');
 const dropZone = document.getElementById('dropZone');
 const urlForm = document.getElementById('urlForm');
 const urlInput = document.getElementById('urlInput');
+const presetSelect = document.getElementById('presetSelect');
 const importSummary = document.getElementById('importSummary');
 let loadingInProgress = false;
 let pendingSourceUrl = null;
 let loadedLayerSummary;
 let labelTextures = new Map();
+
+for (const preset of GDS_PRESETS) {
+  presetSelect.add(new Option(preset.name, preset.url));
+}
+document.getElementById('presetForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  if (!presetSelect.value || loadingInProgress) return;
+  urlInput.value = presetSelect.value;
+  loadGDS(presetSelect.value);
+});
 
 urlForm.addEventListener('submit', (event) => {
   event.preventDefault();
@@ -270,6 +282,8 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       if (pendingSourceUrl) pageUrl.searchParams.set('url', pendingSourceUrl);
       else pageUrl.searchParams.delete('url');
       history.replaceState(null, '', pageUrl);
+      const sourceUrl = pendingSourceUrl ? normalizeGdsUrl(pendingSourceUrl) : null;
+      presetSelect.value = GDS_PRESETS.find((preset) => preset.url === sourceUrl)?.url ?? '';
       loadingStatus.innerText = 'Loaded';
       document.getElementById('importControls').open = false;
       if (loadedLayerSummary) {
