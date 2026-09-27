@@ -115,13 +115,11 @@ credits inferred from named GDS cells. These research notes are kept out of the
 gallery UI. Unpublished identities are not invented.
 Project names and credits remain in their source language.
 
-`public/previews/sanken.png` is a top-view screenshot rendered by this viewer
-from https://github.com/munetomo-maruyama/TR-1um_MPW_Sanken/blob/main/src/tr_1um_sanken.gds
+`public/previews/sanken.png` is a user-supplied KLayout screenshot (2026-09-27) of https://github.com/munetomo-maruyama/TR-1um_MPW_Sanken/blob/main/src/tr_1um_sanken.gds
 It represents the actual submitted GDS; the other previews are the published
 project images, which can differ from the viewer's drawing-layer-only display.
 Rights in each circuit and image remain with their respective authors.
 
 The Sanken repository distributes this design under Apache-2.0 with the
 OpenSUSI / ISHI-KAI / TOKAI RIKA notices reproduced above and in
-[OpenSUSI.txt](public/licenses/OpenSUSI.txt). The screenshot is a rendered
-representation, made by PenguinEino for this gallery (2026).
+[OpenSUSI.txt](public/licenses/OpenSUSI.txt). The supplied screenshot is reproduced unchanged for this gallery.

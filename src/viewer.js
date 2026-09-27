@@ -8,7 +8,7 @@ import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
 import { createPresetBrowser } from './preset_browser.js';
-import { resolvePresetNodes } from './preset_focus.js';
+import { resolvePresetNodes, resolveVisibleNodes, hasVisibleBounds } from './preset_focus.js';
 import { getLayerSpacingTransform } from './layer_spacing.js';
 import { t, setText, setLanguage } from './i18n.js';
 import {
@@ -1261,15 +1261,23 @@ function focusPresetCells(cellNames) {
   }
   clearSelection();
   if (!cellNames.length) {
+    setText(loadingStatus, 'blank');
     zoomNode(GDS.root_node);
     return;
   }
-  const { nodes, missing } = resolvePresetNodes(GDS.root_node, cellNames);
-  if (missing.length || !nodes.length) {
+  const { nodes: matchedNodes, missing } = resolvePresetNodes(GDS.root_node, cellNames);
+  const { nodes, emptyCells } = resolveVisibleNodes(matchedNodes);
+  if (missing.length) {
     setText(loadingStatus, 'Circuit not found', { cells: missing.join(', ') });
     return;
   }
-  setText(loadingStatus, 'blank');
+  if (!nodes.length) {
+    setText(loadingStatus, 'No circuit geometry', { cells: cellNames.join(', ') });
+    return;
+  }
+  if (emptyCells.length) {
+    setText(loadingStatus, 'Empty circuit fallback', { cells: emptyCells.join(', ') });
+  } else setText(loadingStatus, 'blank');
   if (nodes.length === 1) {
     selectNode(nodes[0]);
     zoomNode(nodes[0]);
@@ -1396,7 +1404,8 @@ function setCameraInitialPosition(node) {
 }
 
 function zoomNode(node) {
-  if (node) {
+  // Empty GDS hierarchies have infinite Box3 limits; never send them to the camera.
+  if (node && hasVisibleBounds(node)) {
     const bbox = node.scene_bounding_box;
     let center = new THREE.Vector3();
 

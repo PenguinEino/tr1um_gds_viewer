@@ -24,6 +24,16 @@ const messages = {
     'Circuit cells not found: {cells}',
     '找不到电路单元：{cells}',
   ],
+  'No circuit geometry': [
+    '{cells} に表示できる図形がありません。',
+    'No displayable geometry in {cells}.',
+    '{cells} 中没有可显示的图形。',
+  ],
+  'Empty circuit fallback': [
+    'このGDSの {cells} には図形がないため、親階層を表示しています。',
+    'No geometry in {cells} in this GDS; showing the parent hierarchy.',
+    '此 GDS 中的 {cells} 没有图形，已显示父层级。',
+  ],
   Language: ['言語', 'Language', '语言'],
   'Open GDS': ['GDSを開く', 'Open GDS', '打开 GDS'],
   'GDS input': ['GDS読み込み', 'GDS input', '加载 GDS'],

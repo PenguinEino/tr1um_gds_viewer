@@ -23,3 +23,36 @@ export function resolvePresetNodes(root, cellNames) {
     missing: [...requested].filter((name) => !found.has(name)),
   };
 }
+
+export function hasVisibleBounds(node) {
+  const box = node?.scene_bounding_box;
+  return (
+    box &&
+    ['x', 'y', 'z'].every(
+      (axis) =>
+        Number.isFinite(box.min[axis]) &&
+        Number.isFinite(box.max[axis]) &&
+        box.min[axis] <= box.max[axis],
+    )
+  );
+}
+
+// Some submitted GDS files retain circuit references after removing all their
+// geometry. Focus the closest drawable ancestor instead of an infinite box.
+export function resolveVisibleNodes(matches) {
+  const visible = new Set();
+  const emptyCells = new Set();
+  for (const match of matches) {
+    let node = match;
+    if (!hasVisibleBounds(node)) emptyCells.add(node.cell_name);
+    while (node && !hasVisibleBounds(node)) node = node.parent;
+    if (node) visible.add(node);
+  }
+  return {
+    nodes: [...visible].filter((node) => {
+      for (let p = node.parent; p; p = p.parent) if (visible.has(p)) return false;
+      return true;
+    }),
+    emptyCells: [...emptyCells],
+  };
+}
