@@ -115,13 +115,21 @@
         height: 30px;
         border-radius: 4px;
       }
-      #communityLinks .opensusi-link {
-        width: 48px;
+      #communityLinks .opensusi-crop {
+        position: relative;
+        width: 30px;
+        height: 32px;
+        overflow: hidden;
+        border-radius: 3px;
       }
       #communityLinks .opensusi-icon {
-        width: 44px;
-        height: 30px;
-        border-radius: 3px;
+        position: absolute;
+        width: 80px;
+        height: 42px;
+        max-width: none;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
       }
       #communityLinks .license-link {
         width: auto;
@@ -261,12 +269,14 @@
         aria-label="OpenSUSI"
         title="OpenSUSI"
       >
-        <img
-          class="opensusi-icon"
-          src="https://static.wixstatic.com/media/ddfa79_802e51c57efe47e79cb0cc1e949ab23a~mv2.png/v1/fill/w_1200,h_630,al_c/ddfa79_802e51c57efe47e79cb0cc1e949ab23a~mv2.png"
-          referrerpolicy="no-referrer"
-          alt=""
-        />
+        <span class="opensusi-crop">
+          <img
+            class="opensusi-icon"
+            src="https://static.wixstatic.com/media/ddfa79_802e51c57efe47e79cb0cc1e949ab23a~mv2.png/v1/fill/w_1200,h_630,al_c/ddfa79_802e51c57efe47e79cb0cc1e949ab23a~mv2.png"
+            referrerpolicy="no-referrer"
+            alt=""
+          />
+        </span>
       </a>
       <a
         href="https://discord.gg/Sj47dJk8x7"
