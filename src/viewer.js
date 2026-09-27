@@ -567,9 +567,11 @@ function init3D() {
 
   scene.background = new THREE.Color(0x202020);
 
-  // Keep the upstream face shading for its existing PDKs. TR-1um adds an
-  // oblique key light and cast shadows so broad surfaces reveal the stack.
-  keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
+  // TR-1um uses broad ambient illumination and a gentler key light. Keep
+  // every orientation readable while retaining enough contrast for sidewalls.
+  // Existing PDKs retain the upstream lighting.
+  const softLighting = PDK === 'TR-1um';
+  keyLight = new THREE.DirectionalLight(0xffffff, softLighting ? 1.35 : 3.2);
   keyLight.position.set(0, 0, 50);
   keyLight.castShadow = PDK === 'TR-1um';
   keyLight.shadow.mapSize.set(2048, 2048);
@@ -578,15 +580,24 @@ function init3D() {
   keyLight.shadow.bias = -0.0005;
   keyLight.shadow.normalBias = 0.06;
   scene.add(keyLight, keyLight.target);
-  if (PDK === 'TR-1um') scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+  if (softLighting) scene.add(new THREE.AmbientLight(0xffffff, 1.6));
 
-  for (const [x, y, intensity] of [
-    [-50, 0, 1.6],
-    [0, 50, 2.4],
-    [0, -50, 1.6],
-  ]) {
+  const fillLights = softLighting
+    ? [
+        [-50, 0, 0, 0.6],
+        [50, 0, 0, 0.4],
+        [0, 50, 0, 0.85],
+        [0, -50, 0, 0.55],
+        [0, 0, -50, 0.35],
+      ]
+    : [
+        [-50, 0, 0, 1.6],
+        [0, 50, 0, 2.4],
+        [0, -50, 0, 1.6],
+      ];
+  for (const [x, y, z, intensity] of fillLights) {
     const light = new THREE.DirectionalLight(0xffffff, intensity);
-    light.position.set(x, y, 0);
+    light.position.set(x, y, z);
     scene.add(light);
   }
 

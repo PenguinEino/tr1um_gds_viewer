@@ -18,7 +18,7 @@ WN (22% opacity), PO (24%), and PIN (3%) are translucent guides so large regions
 
 Surface stipples use the actual custom bitmaps from TR-1um's KLayout `.lyp` and KLayout's standard pattern definitions. Their one-pixel lines/dots and repeat periods are rendered in CSS screen pixels, as in KLayout, instead of growing with the layout when zoomed in. The layer list uses the same bitmap swatches. Sidewalls retain their shading and pin labels remain fully legible over the nearly transparent PIN geometry. **Layer patterns** switches the stipples on/off.
 
-The illustrative stack retains the previous sixfold slab thicknesses and extends contact/via spans by about 1.5×. Vias still meet both adjacent metals. Heights and spacing are visualization aids, not physical measurements. **View angle** switches between **3D** and **Top**; **Cast shadows** can be disabled on slower devices. Layer filtering is unchanged.
+The illustrative stack retains the previous sixfold slab thicknesses and extends contact/via spans by about 1.5×. Vias still meet both adjacent metals. Heights and spacing are visualization aids, not physical measurements. **View angle** switches between **3D** and **Top**; **Cast shadows** can be disabled on slower devices. Soft ambient and fill lighting keep back-facing and underside surfaces readable; the gentler key light retains face and height cues without black shadows. Layer filtering is unchanged.
 
 ## TR-1um layer set
 
