@@ -6,6 +6,7 @@ import { WORKER_MSG_TYPE } from './defines.js';
 import { GDS } from './GDS_data.js';
 import { legacyProcessToPDK, PDK_LAYERS } from './pdk_layers.js';
 import { summarizeGdsLayers } from './gds_layers.js';
+import { getLayerPattern, applyLayerPattern, setLayerPatternEnabled } from './layer_patterns.js';
 
 function normalizeGdsUrl(value) {
   const url = new URL(value);
@@ -295,6 +296,7 @@ function init() {
   viewSettings = {
     view_angle: PDK === 'TR-1um' ? '3D' : 'Top',
     shadows: PDK === 'TR-1um',
+    layer_patterns: true,
     filler_cells: true,
     top_cell_geometry: true,
     layers: [],
@@ -450,6 +452,16 @@ function initProcessLayers() {
       layer_visual_order,
       layer_data.color,
     );
+    if (PDK === 'TR-1um') {
+      const layer = GDS.layers[GDS.makeLayerId(layer_data.layer_number, layer_data.layer_datatype)];
+      layer.pattern = getLayerPattern(layer.name);
+      applyLayerPattern(
+        layer.threejs_material,
+        layer.pattern,
+        viewSettings.layer_patterns,
+        layer_data.zmax,
+      );
+    }
   }
 }
 
@@ -609,6 +621,13 @@ function initGUI() {
     .onChange(() => zoomNode(GDS.root_node));
   if (PDK === 'TR-1um') {
     guiViewSettings
+      .add(viewSettings, 'layer_patterns')
+      .name('Layer patterns')
+      .onChange((enabled) => {
+        for (const layer of Object.values(GDS.layers))
+          setLayerPatternEnabled(layer.threejs_material, enabled);
+      });
+    guiViewSettings
       .add(viewSettings, 'shadows')
       .name('Cast shadows')
       .onChange((enabled) => {
@@ -760,6 +779,17 @@ function updateGuiAfterLoad() {
       'border-left: 5px solid #' +
       layer.threejs_material.color.getHexString(THREE.LinearSRGBColorSpace) +
       ';';
+    if (layer.pattern) {
+      const swatch = document.createElement('span');
+      swatch.className = 'layer-pattern-swatch';
+      swatch.title = `${layer.name}: ${layer.pattern.label}`;
+      swatch.setAttribute('aria-hidden', 'true');
+      swatch.style.backgroundColor =
+        '#' + layer.threejs_material.color.getHexString(THREE.LinearSRGBColorSpace);
+      swatch.style.backgroundImage = layer.pattern.css;
+      if (layer.pattern.size) swatch.style.backgroundSize = layer.pattern.size;
+      widget.$name.prepend(swatch);
+    }
   }
 
   // Expose only translucent guide layers actually present in this design.
