@@ -44,18 +44,18 @@ function bounds(node, min = 0, max = 10) {
   return node;
 }
 
-test('OpenSUSI 05 empty OPAMP falls back to its drawable frame, preserving valid targets', () => {
+test('OpenSUSI 05 empty OPAMP falls back to the whole chip, preserving valid targets', () => {
   const root = bounds(add(null, 'tr_1um_OpenSUSI05'));
   const frame = bounds(add(root, 'AUDIO_OPAMP01'));
   const empty = bounds(add(frame, 'opamp_r2r_saito'), Infinity, -Infinity);
   const amplifier = bounds(add(frame, 'opamp_3zki_ina_first'));
   const selected = resolvePresetNodes(root, ['opamp_r2r_saito']).nodes;
   assert.deepEqual(resolveVisibleNodes(selected), {
-    nodes: [frame],
+    nodes: [root],
     emptyCells: ['opamp_r2r_saito'],
   });
   assert.deepEqual(resolveVisibleNodes([amplifier]), { nodes: [amplifier], emptyCells: [] });
-  assert.deepEqual(resolveVisibleNodes([empty, amplifier]).nodes, [frame]);
+  assert.deepEqual(resolveVisibleNodes([empty, amplifier]).nodes, [root]);
   assert.equal(hasVisibleBounds(empty), false);
 });
 

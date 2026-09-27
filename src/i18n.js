@@ -30,9 +30,9 @@ const messages = {
     '{cells} 中没有可显示的图形。',
   ],
   'Empty circuit fallback': [
-    'このGDSの {cells} には図形がないため、親階層を表示しています。',
-    'No geometry in {cells} in this GDS; showing the parent hierarchy.',
-    '此 GDS 中的 {cells} 没有图形，已显示父层级。',
+    'このGDSの {cells} には図形がないため、チップ全体を表示しています。',
+    'No geometry in {cells} in this GDS; showing the whole chip.',
+    '此 GDS 中的 {cells} 没有图形，已显示整个芯片。',
   ],
   Language: ['言語', 'Language', '语言'],
   'Open GDS': ['GDSを開く', 'Open GDS', '打开 GDS'],

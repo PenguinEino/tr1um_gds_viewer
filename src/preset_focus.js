@@ -38,15 +38,18 @@ export function hasVisibleBounds(node) {
 }
 
 // Some submitted GDS files retain circuit references after removing all their
-// geometry. Focus the closest drawable ancestor instead of an infinite box.
+// geometry. Show the whole chip instead of zooming into empty bounds or
+// incidental routing fragments left in an intermediate frame.
 export function resolveVisibleNodes(matches) {
   const visible = new Set();
   const emptyCells = new Set();
   for (const match of matches) {
     let node = match;
-    if (!hasVisibleBounds(node)) emptyCells.add(node.cell_name);
-    while (node && !hasVisibleBounds(node)) node = node.parent;
-    if (node) visible.add(node);
+    if (!hasVisibleBounds(node)) {
+      emptyCells.add(node.cell_name);
+      while (node.parent) node = node.parent;
+    }
+    if (hasVisibleBounds(node)) visible.add(node);
   }
   return {
     nodes: [...visible].filter((node) => {
