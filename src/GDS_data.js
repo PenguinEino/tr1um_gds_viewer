@@ -80,6 +80,7 @@ let GDS = {
     ref_origin_y,
     ref_rotation,
     ref_x_reflection,
+    ref_magnification = 1,
   ) {
     if (!this.cells[parent_cell_name] || !this.cells[cell_name]) return;
     const matrix = new THREE.Matrix4();
@@ -90,7 +91,12 @@ let GDS = {
       Math.sin(ref_rotation / 2.0),
       Math.cos(ref_rotation / 2.0),
     );
-    const scale = new THREE.Vector3(1, ref_x_reflection ? -1 : 1, 1);
+    // GDS MAG scales layout coordinates; layer thickness stays process-defined.
+    const scale = new THREE.Vector3(
+      ref_magnification,
+      ref_x_reflection ? -ref_magnification : ref_magnification,
+      1,
+    );
     matrix.compose(translation, rotation, scale);
 
     let reference = {

@@ -283,13 +283,13 @@ var Module = (() => {
       121162: ($0, $1, $2, $3, $4, $5, $6) => {
         gds_add_label(UTF8ToString($0), $1, $2, UTF8ToString($3), $4, $5, $6);
       },
-      121237: ($0, $1, $2, $3, $4, $5, $6) => {
-        gds_add_reference(UTF8ToString($0), UTF8ToString($1), UTF8ToString($2), $3, $4, $5, $6);
+      121237: ($0, $1, $2, $3, $4, $5, $6, $7) => {
+        gds_add_reference(UTF8ToString($0), UTF8ToString($1), UTF8ToString($2), $3, $4, $5, $6, $7);
       },
-      121327: () => {
+      121331: () => {
         gds_finished_references();
       },
-      121358: ($0) => {
+      121362: ($0) => {
         gds_process_progress($0);
       },
     };

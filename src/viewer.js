@@ -306,6 +306,7 @@ gdsProcessorWorker.addEventListener('message', function (event) {
       event.data.origin_y,
       event.data.rotation,
       event.data.x_reflection,
+      event.data.magnification,
     );
   } else if (event.data.type == WORKER_MSG_TYPE.FINISHED_REFERENCES) {
     processCells(false);

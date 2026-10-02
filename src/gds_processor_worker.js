@@ -188,6 +188,7 @@ async function initialize() {
     origin_y,
     rotation,
     x_reflection,
+    magnification,
   ) => {
     self.postMessage({
       type: WORKER_MSG_TYPE.ADD_REFERENCE,
@@ -198,6 +199,7 @@ async function initialize() {
       origin_y: origin_y,
       rotation: rotation,
       x_reflection: x_reflection,
+      magnification: magnification,
     });
   };
 

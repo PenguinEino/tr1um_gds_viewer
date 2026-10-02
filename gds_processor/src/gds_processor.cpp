@@ -202,9 +202,9 @@ void JS_gds_add_label(const char *cell_name, int tag_layer, int tag_type, const 
     EM_ASM({ gds_add_label(UTF8ToString($0), $1, $2, UTF8ToString($3), $4, $5, $6); }, cell_name, tag_layer, tag_type, text, origin_x, origin_y, pos_z);
 }
 
-void JS_gds_add_reference(const char *parent_cell_name, const char *cell_name, const char *instance_name, double origin_x, double origin_y, double rotation, bool x_reflection)
+void JS_gds_add_reference(const char *parent_cell_name, const char *cell_name, const char *instance_name, double origin_x, double origin_y, double rotation, bool x_reflection, double magnification)
 {
-    EM_ASM({gds_add_reference(UTF8ToString($0), UTF8ToString($1), UTF8ToString($2), $3, $4, $5, $6)}, parent_cell_name, cell_name, instance_name, origin_x, origin_y, rotation, x_reflection);
+    EM_ASM({gds_add_reference(UTF8ToString($0), UTF8ToString($1), UTF8ToString($2), $3, $4, $5, $6, $7)}, parent_cell_name, cell_name, instance_name, origin_x, origin_y, rotation, x_reflection, magnification);
 }
 
 void JS_gds_finished_references()
@@ -563,7 +563,7 @@ void processReferencesHierarchy(Library &lib)
                     // if (ref->type == ReferenceType::Cell && ref->cell->reference_array.count > 0)
                     // ToDo: contemplate case where ReferenceType is RawCell or just name
                     // ToDo: put a name to the array instances (use col and row indexes?)
-                    JS_gds_add_reference(cell->name, ref->cell->name, child_instance_name, origin_x, origin_y, ref->rotation, ref->x_reflection);
+                    JS_gds_add_reference(cell->name, ref->cell->name, child_instance_name, origin_x, origin_y, ref->rotation, ref->x_reflection, ref->magnification);
                 }
 
                 offsets.clear();
@@ -572,7 +572,7 @@ void processReferencesHierarchy(Library &lib)
             {
                 // if (ref->type == ReferenceType::Cell && ref->cell->reference_array.count > 0)
                 // ToDo: contemplate case where ReferenceType is RawCell or just name
-                JS_gds_add_reference(cell->name, ref->cell->name, child_instance_name, ref->origin.x, ref->origin.y, ref->rotation, ref->x_reflection);
+                JS_gds_add_reference(cell->name, ref->cell->name, child_instance_name, ref->origin.x, ref->origin.y, ref->rotation, ref->x_reflection, ref->magnification);
             }
         }
     }
